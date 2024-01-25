@@ -1,0 +1,9 @@
+{
+    "script": "app.js",
+    "watch": true,
+    "ignore_watch": ["logs"],
+    "watch_options": {
+        "followSymlinks": false
+    },
+    "name": "lavange_print_server"
+}

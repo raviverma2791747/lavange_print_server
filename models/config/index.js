@@ -1,0 +1,83 @@
+const mongoose = require("mongoose");
+
+const configSchema = new mongoose.Schema(
+  {
+    name: {
+      type: mongoose.SchemaTypes.String,
+      required: true,
+      unique: true,
+    },
+    status: {
+      type: mongoose.SchemaTypes.String,
+      enum: ["draft", "active", "archive"], 
+      default: "draft",
+      required: true,
+    },
+  },
+  {
+    timestamps: true,
+    discriminatorKey: "type",
+  }
+);
+
+//Home config
+const homeConfigSchema = new mongoose.Schema(
+  {
+    featuredCategories: [
+      {
+        type: mongoose.SchemaTypes.ObjectId,
+        ref: "category",
+      },
+    ],
+    featuredAnnouncements: [
+      {
+        type: mongoose.SchemaTypes.ObjectId,
+        ref: "announcement",
+      },
+    ],
+    bestSellerProducts: [
+      {
+        type: mongoose.SchemaTypes.ObjectId,
+        ref: "product",
+      },
+    ],
+    newArrivalProducts: [
+      {
+        type: mongoose.SchemaTypes.ObjectId,
+        ref: "product",
+      },
+    ],
+    featuredCollections: [
+      {
+        type: mongoose.SchemaTypes.ObjectId,
+        ref: "collection",
+      },
+    ],
+    exploreProducts: [
+      {
+        type: mongoose.SchemaTypes.ObjectId,
+        ref: "product",
+      }
+    ],
+    exploreCollections: [
+      {
+        type: mongoose.SchemaTypes.ObjectId,
+        ref: "collection",
+      }
+    ],
+    exploreProducts: [
+      {
+        type: mongoose.SchemaTypes.ObjectId,
+        ref: "product",
+      }
+    ]
+  },
+  {
+    timestamps: true,
+  }
+);
+
+const ConfigModel = mongoose.model("config", configSchema);
+const HomeConfigModel = ConfigModel.discriminator("home", homeConfigSchema);
+
+module.exports = { ConfigModel, HomeConfigModel };
