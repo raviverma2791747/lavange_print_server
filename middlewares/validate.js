@@ -1,19 +1,18 @@
 const Ajv = require("ajv");
+const { AggregateAjvError } = require("@segment/ajv-human-errors");
 
 const validate = (schema) => {
-  const ajv = new Ajv({ strictTuples: false, allErrors: true });
+  const ajv = new Ajv({ allErrors: true });
 
   return (req, res, next) => {
-    const validate = ajv.compile(schema);
-    const valid = validate(req.body);
+    const validation = ajv.compile(schema);
+    const valid = validation(req.body);
 
     if (!valid) {
-
-      console.log(ajv.errors);
+      const errors = new AggregateAjvError(validation.errors);
       return res.json({
         status: 500,
-        data: {},
-        errors: ['Validation failed'],
+        errors: ["Validation failed", errors.message],
       });
     }
 
@@ -21,7 +20,4 @@ const validate = (schema) => {
   };
 };
 
-
 module.exports = validate;
-
-

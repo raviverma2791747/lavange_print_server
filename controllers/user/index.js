@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { OAuth2Client } = require("google-auth-library");
 const RightType = require("../../models/right");
+const RoleModel = require("../../models/role");
 
 const fetchUser = async (req, res) => {
   const page = parseInt(req.query.page) - 1 || 0;
@@ -51,10 +52,12 @@ const fetchUser = async (req, res) => {
 
 const getUser = async (req, res) => {
   try {
-    let user = await UserModel.findById({ _id: req.params.id }).populate({
-      path: "role",
-      select: "_id name",
-    } ).lean();
+    let user = await UserModel.findById({ _id: req.params.id })
+      .populate({
+        path: "role",
+        select: "_id name",
+      })
+      .lean();
 
     // User.assets = User.assets.map((asset) => {
     //   return {
@@ -277,7 +280,7 @@ const userLoginAdmin = async (req, res) => {
       return res.json({ status: 400 });
     }
 
-    if(user.role.rights.includes(RightType.ADMIN_ACCESS) === false) {
+    if (user.role.rights.includes(RightType.ADMIN_ACCESS) === false) {
       return res.json({ status: 400 });
     }
 
@@ -306,7 +309,14 @@ const userLoginAdmin = async (req, res) => {
     // await newActivity.save();
 
     const token = jwt.sign(
-      { userId, username: _username, firstName, lastName , role: user.role.name, rights: user.role.rights},
+      {
+        userId,
+        username: _username,
+        firstName,
+        lastName,
+        role: user.role.name,
+        rights: user.role.rights,
+      },
       process.env.JWT_SECRET_KEY,
       {
         expiresIn: "8h",
@@ -330,6 +340,7 @@ const userRegister = async (req, res) => {
   try {
     const { username, password, firstName, lastName, email } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
+    const userRole = await RoleModel.findOne({ name: "user" });
 
     const user = new UserModel({
       username,
@@ -337,6 +348,7 @@ const userRegister = async (req, res) => {
       lastName,
       email,
       password: hashedPassword,
+      role: userRole._id,
     });
     await user.save();
     res.json({ status: 200, data: { msg: "User registered successfully" } });
@@ -373,11 +385,13 @@ const userLoginGoogle = async (req, res) => {
   });
 
   if (!user) {
+    const userRole = await RoleModel.findOne({ name: "user" });
     user = new UserModel({
       username: token_info.payload.email,
       firstName: token_info.payload.given_name,
       lastName: token_info.payload.family_name,
       email: token_info.payload.email,
+      role: userRole._id,
     });
 
     await user.save();
@@ -437,14 +451,14 @@ const userInfo = async (req, res) => {
         localField: "role",
         foreignField: "_id",
         as: "role",
-      }
+      },
     },
     {
-      $set : {
-        role : {
-          $first : "$role"
-        }
-      }
+      $set: {
+        role: {
+          $first: "$role",
+        },
+      },
     },
     // {
     //   $lookup: {
@@ -494,5 +508,5 @@ module.exports = {
   loginUserGooglePublic: userLoginGoogle,
   userInfo,
   updatePassword: userUpdatePassword,
-  userLoginAdmin
+  userLoginAdmin,
 };

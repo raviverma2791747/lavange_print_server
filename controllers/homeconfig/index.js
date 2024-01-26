@@ -33,9 +33,10 @@ const getHomeConfig = async (req, res) => {
 };
 
 const updateHomeConfig = async (req, res) => {
+  const _id = req.body._id ?? new mongoose.Types.ObjectId();
   const homeConfig = await HomeConfigModel.updateOne(
     {
-      _id: req.body._id ?? new mongoose.Types.ObjectId(),
+      _id: _id,
     },
     req.body,
     {
@@ -45,7 +46,11 @@ const updateHomeConfig = async (req, res) => {
   );
   return res.json({
     status: 200,
-    data: {},
+    data: {
+      homeConfig: {
+        id: _id,
+      },
+    },
   });
 };
 

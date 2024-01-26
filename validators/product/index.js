@@ -167,7 +167,7 @@ const schema = {
                     "sku",
                     "attributes",
                     "price",
-                    "assets",
+                    //"assets",
                     "inventoryQuantity",
                   ],
                 },

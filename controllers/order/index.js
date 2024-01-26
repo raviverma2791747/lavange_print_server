@@ -3,6 +3,22 @@ const OrderModel = require("../../models/order");
 const UserModel = require("../../models/user");
 const ProductModel = require("../../models/product");
 
+const fetchOrder = async (req, res) => {
+  const orders = await OrderModel.find().populate({
+    path: "user",
+    select: "username",
+  });
+
+  return res.json({ status: 200, data: { orders } });
+};
+
+const getOrder = async (req, res) => {
+  const order = await OrderModel.findById(req.params.id).populate(
+    "user  items.product"
+  );
+
+  return res.json({ status: 200, data: { order } });
+};
 const fetchUserOrder = async (req, res) => {
   const orders = await OrderModel.find({ user: req.user.userId });
 
@@ -39,51 +55,59 @@ const updateUserOrder = async (req, res) => {
 
 const createUserOrder = async (req, res) => {
   const user = await UserModel.findById(req.user.userId);
- // console.log(req.body);
-  let products = await  await Promise.all(req.body.products.map(async (ci) => {
+  // console.log(req.body);
+  let items = await await Promise.all(
+    req.body.items.map(async (ci) => {
+      // console.log(ci);
+      let price = 0;
+      let product = await ProductModel.findById(ci.product);
+      let variant;
+      if (ci.variant) {
+        let variantConfig = product.variantConfigs.id(ci.variantSchema);
+        variant = variantConfig.variants.id(ci.variant);
+      } else {
+        price = product.price;
+      }
 
-   // console.log(ci);
-    let price = 0;
-    let product = await ProductModel.findById(ci.product);
-    let variant;
-    if (ci.variant) {
-      let variantConfig = product.variantConfigs.id(ci.variantSchema);
-      variant = variantConfig.variants.id(ci.variant);
-    } else {
-      price = product.price;
-    }
+      if (variant) {
+        price = variant.price;
+      }
 
-    if (variant) {
-      price = variant.price;
-    }
+      // console.log({
+      //   product: ci.product,
+      //   quantity: ci.quantity,
+      //   variant: ci.variant,
+      //   variantSchema: ci.variantSchema,
+      //   price: price,
+      // });
 
-    // console.log({
-    //   product: ci.product,
-    //   quantity: ci.quantity,
-    //   variant: ci.variant,
-    //   variantSchema: ci.variantSchema,
-    //   price: price,
-    // });
-
-    return {
-      product: ci.product,
-      quantity: ci.quantity,
-      variant: ci.variant,
-      variantSchema: ci.variantSchema,
-      price: price,
-    };
-  }));
+      return {
+        product: ci.product,
+        quantity: ci.quantity,
+        variant: ci.variant,
+        variantSchema: ci.variantSchema,
+        price: price,
+      };
+    })
+  );
   let address = user.addresses.id(req.body.address);
 
   console.log(req.body.address);
 
- // console.log(products);
+  // console.log(products);
   const order = await OrderModel.create({
     user: user._id,
-    products: products,
+    items: items,
     address: address,
   });
-  return res.json({ status: 200 });
+  return res.json({
+    status: 200,
+    data: {
+      order: {
+        id: order._id,
+      },
+    },
+  });
 };
 
 module.exports = {
@@ -91,4 +115,6 @@ module.exports = {
   getUserOrder,
   updateUserOrder,
   createUserOrder,
+  fetchOrder,
+  getOrder,
 };

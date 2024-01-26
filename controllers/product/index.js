@@ -98,7 +98,7 @@ const updateProduct = async (req, res) => {
     status: 200,
     data: {
       product: {
-        _id,
+        id : _id,
       },
     },
   });

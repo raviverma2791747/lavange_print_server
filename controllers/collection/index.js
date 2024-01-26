@@ -58,9 +58,10 @@ const getCollection = async (req, res) => {
 };
 
 const updateCollection = async (req, res) => {
+  const _id = req.body._id ?? new mongoose.Types.ObjectId();
   const collection = await CollectionModel.updateOne(
     {
-      _id: req.body._id ?? new mongoose.Types.ObjectId(),
+      _id: _id,
     },
     req.body,
     {
@@ -71,7 +72,9 @@ const updateCollection = async (req, res) => {
   return res.json({
     status: 200,
     data: {
-      collection,
+      collection: {
+        id: _id,
+      },
     },
   });
 };

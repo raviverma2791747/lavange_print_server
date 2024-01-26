@@ -14,7 +14,7 @@ const fetchCategory = async (req, res) => {
   })
     .skip(page * limit)
     .limit(limit);
-  
+
   return res.json({
     status: 200,
     data: {
@@ -41,9 +41,10 @@ const getCategory = async (req, res) => {
 };
 
 const updateCategory = async (req, res) => {
+  const _id = req.body._id ?? new mongoose.Types.ObjectId();
   const category = await CategoryModel.updateOne(
     {
-      _id: req.body.id ?? new mongoose.Types.ObjectId(),
+      _id: _id,
     },
     req.body,
     {
@@ -53,7 +54,11 @@ const updateCategory = async (req, res) => {
   );
   return res.json({
     status: 200,
-    data: {},
+    data: {
+      category: {
+        id: _id,
+      },
+    },
   });
 };
 
