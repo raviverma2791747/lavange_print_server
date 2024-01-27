@@ -10,7 +10,10 @@ const validate = require("../../middlewares/validate");
 const tagSchema = require("../../validators/tag");
 const productSchema = require("../../validators/product");
 const announcementSchema = require("../../validators/announcement");
+const collectionSchema = require("../../validators/collection");
+const categorySchema = require("../../validators/category");
 
+const { getStats } = require("../../controllers/stat");
 const {
   getProduct,
   fetchProduct,
@@ -63,6 +66,8 @@ const {
   getUserOrder,
   fetchUserOrder,
   createUserOrder,
+  fetchOrder,
+  getOrder,
 } = require("../../controllers/order");
 const { updateRole, getRole, fetchRole } = require("../../controllers/role");
 const { fetchRight } = require("../../controllers/right");
@@ -74,39 +79,42 @@ const dotenv = require("dotenv");
 dotenv.config();
 
 // // Configure Multer for image uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, `${process.env.MEDIA_PATH}/`); // Specify the upload directory
-  },
-  filename: (req, file, cb) => {
-    cb(null, `image-${uuidv4()}-${path.extname(file.originalname)}`); // Use original filename
-  },
-});
+var storage;
+var s3;
 
+if (process.env.NODE_ENV === "production") {
+  s3 = new S3Client({
+    region: process.env.AWS_REGION,
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    },
+  });
 
-const s3 = new S3Client({
-  region: process.env.AWS_REGION,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  },
-})
+  storage = multerS3({
+    s3: s3,
+    bucket: process.env.AWS_S3_BUCKET,
+    contentType: multerS3.AUTO_CONTENT_TYPE,
+    metadata: function (req, file, cb) {
+      cb(null, { fieldName: file.fieldname });
+    },
+    key: function (req, file, cb) {
+      cb(null, `image-${uuidv4()}${path.extname(file.originalname)}`);
+    },
+  });
+} else {
+  storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, `${process.env.MEDIA_PATH}/`); // Specify the upload directory
+    },
+    filename: (req, file, cb) => {
+      cb(null, `image-${uuidv4()}${path.extname(file.originalname)}`); // Use original filename
+    },
+  });
+}
 
 const upload = multer({
-  storage:
-    process.env.NODE_ENV === "production"
-      ? multerS3({
-          s3: s3,
-          bucket: process.env.AWS_S3_BUCKET,
-          contentType: multerS3.AUTO_CONTENT_TYPE,
-          metadata: function (req, file, cb) {
-            cb(null, { fieldName: file.fieldname });
-          },
-          key: function (req, file, cb) {
-            cb(null, `image-${uuidv4()}`);
-          },
-        })
-      : storage,
+  storage: storage,
   limits: {
     fileSize: 5 * 1024 * 1024, // limit file size to 5MB
   },
@@ -155,14 +163,28 @@ router.post("/tag", authenticate, admin, validate(tagSchema), updateTag);
 //Collection
 router.get("/collection", authenticate, admin, fetchCollection);
 router.get("/collection/:id", authenticate, admin, getCollection);
-router.post("/collection", authenticate, admin, updateCollection);
+router.post(
+  "/collection",
+  authenticate,
+  admin,
+  validate(collectionSchema),
+  updateCollection
+);
 
 //Category
 router.get("/category", authenticate, admin, fetchCategory);
 router.get("/category/:id", authenticate, admin, getCategory);
-router.post("/category", authenticate, admin, updateCategory);
+router.post(
+  "/category",
+  authenticate,
+  admin,
+  validate(categorySchema),
+  updateCategory
+);
 
 //Order
+router.get("/order", authenticate, admin, fetchOrder);
+router.get("/order/:id", authenticate, admin, getOrder);
 router.get("/user/order", authenticate, fetchUserOrder);
 router.get("/user/order/:id", authenticate, getUserOrder);
 router.post("/user/order/create", authenticate, createUserOrder);
@@ -199,6 +221,9 @@ router.post("/user/change-password", authenticate, updatePassword);
 
 //Config
 router.get("/config", authenticate, admin, fetchConfig);
+
+//Stat
+router.get("/stats", authenticate, admin, getStats);
 
 //Home config
 //router.get("/config/home", fetchHomeConfig);

@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { assetUrl } = require("../../helper/utils");
 
 const productSchema = new mongoose.Schema(
   {
@@ -160,14 +161,11 @@ const productSchema = new mongoose.Schema(
 );
 
 productSchema.virtual("assets.url").get(function () {
-  return this.assets.map(
-    (asset) =>
-      `${process.env.BASE_URI}:${process.env.PORT || 3000}/media/${asset.id}`
-  ); // Construct the full URLs
+  return this.assets.map((asset) => assetUrl(asset.id)); // Construct the full URLs
 });
 
-productSchema.set('toObject', { virtuals: true });
-productSchema.set('toJSON', { virtuals: true });
+productSchema.set("toObject", { virtuals: true });
+productSchema.set("toJSON", { virtuals: true });
 
 const ProductModel = mongoose.model("product", productSchema);
 

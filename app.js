@@ -16,6 +16,7 @@ const mongoose = require("mongoose");
 // const { initScheduledJobs } = require("./helper/scheduledFunctions.js");
 const { init } = require("./helper/init");
 const fs = require("fs");
+const errorHandler = require("./middlewares/errorHandler.js");
 
 dotenv.config();
 
@@ -41,24 +42,28 @@ app.use(cookieParser());
 app.use(require("express-status-monitor")());
 app.use("/media", express.static(path.join(__dirname, process.env.MEDIA_PATH)));
 
-// if(app.get("env")=="production") {
-//   var accessLogStream = fs.createWriteStream(__dirname + '/logs/' + "access.log", {flags: 'a'});
-//   app.use(morgan('combined',{ stream: accessLogStream }));
-//   app.use(morgan('combined'));
-// }
-// else {
-//   app.use(morgan("dev")); //log to console on development
-// }
-app.use(
-  morgan(":method :url :status :res[content-length] - :response-time ms")
-);
+if (app.get("env") == "production") {
+  var accessLogStream = fs.createWriteStream(
+    __dirname + "/logs/" + "access.log",
+    { flags: "a" }
+  );
+  app.use(morgan("combined", { stream: accessLogStream }));
+  app.use(morgan("combined"));
+} else {
+  app.use(morgan("dev")); //log to console on development
+}
+// app.use(
+//   morgan(":method :url :status :res[content-length] - :response-time ms")
+// );
 
-app.get("/print", async (req, res) => {
+app.get("/print", async (req,  res, next) => {
   return res.json({ status: 200 });
 });
 
 app.use("/print/public", router);
 app.use("/print/private", protectedRouter);
+
+app.use(errorHandler);
 
 //Scheduled functions
 // if (app.get("env") == "production" && process.env.RUN_SCHEDULE_JOB === true) {
