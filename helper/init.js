@@ -15,6 +15,7 @@ const initUserRole = async () => {
         rights: [],
       });
       console.log("User role created successfully");
+      return;
     }
     console.log("User role already exists");
   } catch (error) {
@@ -31,6 +32,7 @@ const initOwnerRole = async () => {
         rights: Object.values(RightType),
       });
       console.log("Owner role created successfully");
+      return;
     }
     console.log("Owner role already exists");
   } catch (error) {
@@ -69,6 +71,7 @@ const initMasterUser = async () => {
       });
       await user.save();
       console.log("Master user created");
+      return;
     } else {
       if (!existingUser.role) {
         existingUser.role = ownerRole._id;
@@ -87,6 +90,7 @@ const initHomeConfig = async () => {
     if (!homeConfig) {
       await HomeConfigModel.create({ name: "home", status: STATUS.ACTIVE });
       console.log("Home config created");
+      return;
     }
     console.log("Home config already exists");
   } catch (error) {

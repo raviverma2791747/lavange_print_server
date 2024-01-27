@@ -1,42 +1,43 @@
 const mongoose = require("mongoose");
 const AnnouncementModel = require("../../models/announcement");
+const { assetUrl } = require("../../helper/utils");
 
-const fetchAnnouncement = async (req, res) => {
-  const { status } = req.query;
+const fetchAnnouncement = async (req,  res, next) => {
+  try {
+    const { status } = req.query;
 
-  let filter = {};
+    let filter = {};
 
-  if (status) {
-    filter["status"] = status;
+    if (status) {
+      filter["status"] = status;
+    }
+
+    let announcements = await AnnouncementModel.find(filter).lean();
+    announcements = announcements.map((announcement) => {
+      return {
+        ...announcement,
+        assetUrl: assetUrl(announcement.assetId),
+      };
+    });
+
+    return res.json({
+      status: 200,
+      data: {
+        announcements,
+      },
+    });
+  } catch (error) {
+    next(error);
   }
-
-  let announcements = await AnnouncementModel.find(filter).lean();
-  announcements = announcements.map((announcement) => {
-    return {
-      ...announcement,
-      assetUrl: `${process.env.BASE_URI}:${process.env.PORT || 3000}/media/${
-        announcement.assetId
-      }`,
-    };
-  });
-
-  return res.json({
-    status: 200,
-    data: {
-      announcements,
-    },
-  });
 };
 
-const getAnnouncement = async (req, res) => {
+const getAnnouncement = async (req,  res, next) => {
   try {
     let announcement = await AnnouncementModel.findById({
       _id: req.params.id,
     }).lean();
 
-    announcement.assetUrl = `${process.env.BASE_URI}:${
-      process.env.PORT || 3000
-    }/media/${announcement.assetId}`;
+    announcement.assetUrl = assetUrl(announcement.assetId);
 
     return res.json({
       status: 200,
@@ -44,34 +45,35 @@ const getAnnouncement = async (req, res) => {
         announcement,
       },
     });
-  } catch {
-    return res.json({
-      status: 500,
-      data: {},
-    });
+  } catch (error) {
+    next(error);
   }
 };
 
-const updateAnnouncement = async (req, res) => {
-  const _id = req.body._id ?? new mongoose.Types.ObjectId();
-  const announcement = await AnnouncementModel.updateOne(
-    {
-      _id: _id,
-    },
-    req.body,
-    {
-      upsert: true,
-      new: true,
-    }
-  );
-  return res.json({
-    status: 200,
-    data: {
-      announcement: {
-        id: _id,
+const updateAnnouncement = async (req,  res, next) => {
+  try {
+    const _id = req.body._id ?? new mongoose.Types.ObjectId();
+    const announcement = await AnnouncementModel.updateOne(
+      {
+        _id: _id,
       },
-    },
-  });
+      req.body,
+      {
+        upsert: true,
+        new: true,
+      }
+    );
+    return res.json({
+      status: 200,
+      data: {
+        announcement: {
+          id: _id,
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 module.exports = { fetchAnnouncement, getAnnouncement, updateAnnouncement };
