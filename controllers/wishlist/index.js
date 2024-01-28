@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const UserModel = require("../../models/user");
 const { assetUrl } = require("../../helper/utils");
 
-const getUserWishlist = async (req,  res, next) => {
+const getUserWishlist = async (req, res, next) => {
   try {
     const _id = req.user.userId;
     let user = await UserModel.findById(_id).populate("wishList").lean();
@@ -21,7 +21,7 @@ const getUserWishlist = async (req,  res, next) => {
   }
 };
 
-const addUserWishlist = async (req,  res, next) => {
+const addUserWishlist = async (req, res, next) => {
   try {
     const _id = req.user.userId;
     const user = await UserModel.findById(req.user.userId);
@@ -35,9 +35,9 @@ const addUserWishlist = async (req,  res, next) => {
   }
 };
 
-const removeUserWishlist = async (req,  res, next) => {
+const removeUserWishlist = async (req, res, next) => {
   try {
-    const _id = req.user._id;
+    const _id = req.user.userId;
     const user = await UserModel.findById(_id);
     const { productId } = req.body;
 

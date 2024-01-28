@@ -55,7 +55,7 @@ const {
   addUserWishlist,
   removeUserWishlist,
 } = require("../../controllers/wishlist");
-const { getUserCart, addUserCart } = require("../../controllers/cart");
+const { getUserCart, addUserCart, removeUserCart } = require("../../controllers/cart");
 const {
   fetchUserAddress,
   getUserAddress,
@@ -198,6 +198,7 @@ router.post("/user/wishlist/remove", authenticate, removeUserWishlist);
 //Cart
 router.get("/user/cart", authenticate, getUserCart);
 router.post("/user/cart/add", authenticate, addUserCart);
+router.post("/user/cart/remove", authenticate, removeUserCart);
 
 //Address
 router.get("/user/address", authenticate, fetchUserAddress);
