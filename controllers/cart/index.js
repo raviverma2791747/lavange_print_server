@@ -74,11 +74,11 @@ const addUserCart = async (req,  res, next) => {
 
 const removeUserCart = async (req,  res, next) => {
   try {
-    const _id = req.user._id;
+    const _id = req.user.userId;
     const user = await UserModel.findById(_id);
-    const { productId } = req.body;
+    const { itemId } = req.body;
 
-    user.cart.pull(productId);
+    user.cart.pull(itemId);
 
     await user.save();
 

@@ -27,13 +27,15 @@ app.set("trust proxy", true);
 
 mongoose.connect(process.env.MONGO_URI);
 
-// if (app.get("env") == "production") {
-//   app.use(cors({
-//     origin: 'https://ipo.lavange.in',
-//   }));
-// } else {
-app.use(cors());
-//}
+if (app.get("env") == "production") {
+  app.use(
+    cors({
+      origin: ["https://print.lavange.in", "https://admin-print.lavange.in"],
+    })
+  );
+} else {
+  app.use(cors());
+}
 
 app.use(bodyParser.json({ limit: "10mb" }));
 app.use(bodyParser.xml({ limit: "10mb" }));
@@ -56,7 +58,7 @@ if (app.get("env") == "production") {
 //   morgan(":method :url :status :res[content-length] - :response-time ms")
 // );
 
-app.get("/print", async (req,  res, next) => {
+app.get("/print", async (req, res, next) => {
   return res.json({ status: 200 });
 });
 
