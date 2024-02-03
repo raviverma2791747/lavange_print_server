@@ -55,6 +55,25 @@ const orderSchema = new mongoose.Schema(
         enum: ["home", "work", "other"],
       },
     },
+    status: {
+      type: mongoose.SchemaTypes.String,
+      enum: ["delivered", "pending", "cancelled", "returned"],
+      default: "pending",
+    },
+    paymentStatus: {
+      type: mongoose.SchemaTypes.String,
+      enum: ["pending", "success", "failed"],
+      default: "pending",
+    },
+    paymentType: {
+      type: mongoose.SchemaTypes.String,
+      enum: ["cod", "online"],
+      default: "online",
+    },
+    paymentGateway: {
+      type: mongoose.SchemaTypes.String,
+      enum: ["paytm", "phonepe", "razorpay"],
+    },
   },
   { timestamps: true }
 );
