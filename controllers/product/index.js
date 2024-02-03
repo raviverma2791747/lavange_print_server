@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const ProductModel = require("../../models/product");
 const { assetUrl } = require("../../helper/utils");
 
-const fetchProduct = async (req,  res, next) => {
+const fetchProduct = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) - 1 || 0;
     const limit = parseInt(req.query.limit) || 10;
@@ -29,7 +29,7 @@ const fetchProduct = async (req,  res, next) => {
       product.assets = product.assets.map((asset) => {
         return {
           ...asset,
-          url:assetUrl(asset.id),
+          url: assetUrl(asset.id),
         };
       });
     });
@@ -55,7 +55,7 @@ const fetchProduct = async (req,  res, next) => {
   }
 };
 
-const getProduct = async (req,  res, next) => {
+const getProduct = async (req, res, next) => {
   try {
     let product = await ProductModel.findById({ _id: req.params.id })
       .populate("tags collections category")
@@ -79,7 +79,7 @@ const getProduct = async (req,  res, next) => {
   }
 };
 
-const updateProduct = async (req,  res, next) => {
+const updateProduct = async (req, res, next) => {
   try {
     const _id = req.body._id ?? new mongoose.Types.ObjectId();
 
@@ -106,7 +106,7 @@ const updateProduct = async (req,  res, next) => {
   }
 };
 
-const fetchUserProduct = async (req,  res, next) => {
+const fetchUserProduct = async (req, res, next) => {
   try {
     const match_stage = {
       $match: {
@@ -168,10 +168,7 @@ const fetchUserProduct = async (req,  res, next) => {
                   "$$asset",
                   {
                     url: {
-                      $concat: [
-                        assetUrl(""),
-                        "$$asset.id",
-                      ],
+                      $concat: [assetUrl(""), "$$asset.id"],
                     },
                   },
                 ],
@@ -254,7 +251,7 @@ const fetchUserProduct = async (req,  res, next) => {
   }
 };
 
-const getUserProduct = async (req,  res, next) => {
+const getUserProduct = async (req, res, next) => {
   try {
     const product = await ProductModel.aggregate([
       {
@@ -273,10 +270,7 @@ const getUserProduct = async (req,  res, next) => {
                   "$$asset",
                   {
                     url: {
-                      $concat: [
-                        assetUrl(""),
-                        "$$asset.id",
-                      ],
+                      $concat: [assetUrl(""), "$$asset.id"],
                     },
                   },
                 ],
@@ -326,6 +320,21 @@ const getUserProduct = async (req,  res, next) => {
           },
           schemaId: { $ifNull: ["$variantConfig._id", null] },
         },
+      },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "category",
+          foreignField: "_id",
+          as: "category",
+        },
+      },
+      {
+        $set: {
+          category: {
+            $first: "$category",
+          }
+        }
       },
       {
         $project: {
