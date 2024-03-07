@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const UserModel = require("../../models/user");
 const { assetUrl } = require("../../helper/utils");
 
-const getUserCart = async (req,  res, next) => {
+const getUserCart = async (req, res, next) => {
   try {
     const _id = req.user.userId;
     let user = await UserModel.findById(_id).populate("cart.product").lean();
@@ -50,19 +50,38 @@ const getUserCart = async (req,  res, next) => {
   }
 };
 
-const addUserCart = async (req,  res, next) => {
+const addUserCart = async (req, res, next) => {
   try {
     const _id = req.user.userId;
     const user = await UserModel.findById(_id);
     console.log(req.user);
     const { productId, quantity, variantId, variantSchemaId } = req.body;
 
-    user.cart.push({
-      product: productId,
-      variant: variantId,
-      variantSchema: variantSchemaId,
-      quantity,
-    });
+    //check if product in cart only allow max 10 qunatity for a single product
+    //check if product in cart only allow max 10 qunatity for a single product
+
+    let item = user.cart.find(
+      (cartItem) =>
+        cartItem.product.toString() === productId &&
+        cartItem.variant.toString() === variantId &&
+        cartItem.variantSchema.toString() === variantSchemaId
+    );
+
+    if (item) {
+      //make sure qunatity not gretare than 10
+      if (item.quantity + quantity <= 10) {
+        item.quantity += quantity;
+      } else {
+        return res.json({ status: 400 });
+      }
+    } else {
+      user.cart.push({
+        product: productId,
+        variant: variantId,
+        variantSchema: variantSchemaId,
+        quantity,
+      });
+    }
 
     await user.save();
 
@@ -72,7 +91,7 @@ const addUserCart = async (req,  res, next) => {
   }
 };
 
-const removeUserCart = async (req,  res, next) => {
+const removeUserCart = async (req, res, next) => {
   try {
     const _id = req.user.userId;
     const user = await UserModel.findById(_id);

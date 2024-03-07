@@ -58,6 +58,7 @@ const updateHomeConfig = async (req,  res, next) => {
 
 const getHomeConfigPublic = async (req,  res, next) => {
   try {
+    console.log(req.user)
     // const homeConfig = await HomeConfigModel.aggregate([
     //   {
     //     $lookup: {
