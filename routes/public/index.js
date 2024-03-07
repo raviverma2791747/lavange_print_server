@@ -21,7 +21,7 @@ const { getSearchFilters } = require("../../controllers/search");
 const router = express.Router();
 
 router.get("/config/home", getHomeConfigPublic);
-router.get("/product/:id", getUserProduct);
+router.get("/product/:slug", getUserProduct);
 router.get("/product", fetchUserProduct);
 router.post("/user/login", loginUserPublic);
 router.post("/user/login/admin", userLoginAdmin);
@@ -31,7 +31,7 @@ router.post("/user/login/google", loginUserGooglePublic);
 router.get("/category", fetchCategory);
 router.get("/collection", fetchCollection);
 
-router.get("/collection/:id", getUserCollection);
+router.get("/collection/:slug", getUserCollection);
 router.get("/filters", getSearchFilters);
 
 module.exports = router;

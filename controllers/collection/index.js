@@ -27,6 +27,7 @@ const fetchCollection = async (req,  res, next) => {
   }
 };
 
+
 const getCollection = async (req,  res, next) => {
   try {
     let collection = await CollectionModel.findById({ _id: req.params.id })
@@ -87,7 +88,7 @@ const updateCollection = async (req,  res, next) => {
 
 const getUserCollection = async (req,  res, next) => {
   try {
-    let collection = await CollectionModel.findById({ _id: req.params.id })
+    let collection = await CollectionModel.findOne({ slug: req.params.slug })
       .populate("products")
       .lean();
 

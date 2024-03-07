@@ -256,7 +256,8 @@ const getUserProduct = async (req, res, next) => {
     const product = await ProductModel.aggregate([
       {
         $match: {
-          _id: new mongoose.Types.ObjectId(req.params.id),
+          //_id: new mongoose.Types.ObjectId(req.params.id),
+          slug: req.params.slug,
         },
       },
       {
