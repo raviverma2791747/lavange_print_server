@@ -30,7 +30,7 @@ mongoose.connect(process.env.MONGO_URI);
 if (app.get("env") == "production") {
   app.use(
     cors({
-      origin: ["https://print.lavange.in", "https://admin-print.lavange.in"],
+      origin: ["https://print.lavange.in", "https://admin-print.lavange.in","https://ecommerce-one-drab-95.vercel.app"],
     })
   );
 } else {
