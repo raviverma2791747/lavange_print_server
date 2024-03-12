@@ -17,10 +17,13 @@ const mongoose = require("mongoose");
 const { init } = require("./helper/init");
 const fs = require("fs");
 const errorHandler = require("./middlewares/errorHandler.js");
+const { initSocket } = require("./socket/index.js");
 
 dotenv.config();
 
 const app = express();
+const server = require("http").createServer(app);
+
 
 app.set("env", process.env.NODE_ENV || "development");
 app.set("trust proxy", true);
@@ -30,7 +33,13 @@ mongoose.connect(process.env.MONGO_URI);
 if (app.get("env") == "production") {
   app.use(
     cors({
-      origin: ["https://print.lavange.in", "https://admin-print.lavange.in","https://ecommerce-one-drab-95.vercel.app"],
+      origin: [
+        "https://print.lavange.in",
+        "https://admin-print.lavange.in",
+        "https://ecommerce-one-drab-95.vercel.app",
+        "http://localhost:5000",
+        "https://admin.socket.io"
+      ],
     })
   );
 } else {
@@ -54,6 +63,7 @@ if (app.get("env") == "production") {
 } else {
   app.use(morgan("dev")); //log to console on development
 }
+
 // app.use(
 //   morgan(":method :url :status :res[content-length] - :response-time ms")
 // );
@@ -75,7 +85,9 @@ app.use(errorHandler);
 
 init();
 
-app.listen(process.env.PORT, "0.0.0.0", () => {
+initSocket(server);
+
+server.listen(process.env.PORT, "0.0.0.0", () => {
   console.log(process.env.AWS_S3_BUCKET);
   console.log(`Started server in ${app.get("env")} at:`, process.env.PORT);
 });
