@@ -1,4 +1,4 @@
-const { min } = require("lodash");
+const { min, update } = require("lodash");
 const mongoose = require("mongoose");
 
 const orderSchema = new mongoose.Schema(
@@ -15,9 +15,6 @@ const orderSchema = new mongoose.Schema(
         },
       },
     ],
-    staus: {
-      type: mongoose.SchemaTypes.String,
-    },
     user: {
       type: mongoose.SchemaTypes.ObjectId,
       ref: "user",
@@ -57,12 +54,70 @@ const orderSchema = new mongoose.Schema(
     },
     status: {
       type: mongoose.SchemaTypes.String,
-      enum: ["delivered", "pending", "cancelled", "returned"],
+      enum: [
+        "pending",
+        "placed",
+        "prepared",
+        "dispatched",
+        "cancelled",
+        "delivered",
+        "returned",
+      ],
       default: "pending",
+    },
+    timeline: [
+      {
+        updatedAt: { type: mongoose.SchemaTypes.Date, default: Date.now },
+        status: {
+          type: mongoose.SchemaTypes.String,
+          enum: [
+            "pending",
+            "placed",
+            "prepared",
+            "dispatched",
+            "cancelled",
+            "delivered",
+            "returned",
+          ],
+        },
+        message: {
+          type: mongoose.SchemaTypes.String,
+        },
+      },
+    ],
+    shipping: {
+      vendor: {
+        type: mongoose.SchemaTypes.String,
+        enum: [
+          "shiprocket",
+          "delhivery",
+          "amazon",
+          "flipkart",
+          "myntra",
+          "none",
+        ],
+        default: "none",
+      },
+      trackingUrl: {
+        type: mongoose.SchemaTypes.String,
+        default: "",
+      },
+      price: {
+        type: mongoose.SchemaTypes.Number,
+        default: 0,
+      },
+      trackingId: {
+        type: mongoose.SchemaTypes.String,
+        default: "",
+      },
+    },
+    transactionId: {
+      type: mongoose.SchemaTypes.String,
+      default: "",
     },
     paymentStatus: {
       type: mongoose.SchemaTypes.String,
-      enum: ["pending", "success", "failed"],
+      enum: ["pending", "success", "failed", "refunded"],
       default: "pending",
     },
     paymentType: {
@@ -72,7 +127,8 @@ const orderSchema = new mongoose.Schema(
     },
     paymentGateway: {
       type: mongoose.SchemaTypes.String,
-      enum: ["paytm", "phonepe", "razorpay"],
+      enum: ["paytm", "phonepe", "razorpay", "none"],
+      default: "none",
     },
   },
   { timestamps: true }

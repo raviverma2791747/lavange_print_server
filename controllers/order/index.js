@@ -9,6 +9,27 @@ const { assetUrl } = require("../../helper/utils");
 
 dotenv.config();
 
+const ORDER_STATUS = {
+  pending: "pending",
+  placed: "placed",
+  prepared: "prepared",
+  dispatched: "dispatched",
+  cancelled: "cancelled",
+  delivered: "delivered",
+  returned: "returned",
+}
+
+const ORDER_MESSAGE = {
+  //write message for each status
+  pending: "Your order has been placed.",
+  placed: "Your order has been placed.",
+  prepared: "Your order has been prepared.",
+  dispatched: "Your order has been dispatched.",
+  cancelled: "Your order has been cancelled.",
+  delivered: "Your order has been delivered.",
+  returned: "Your order has been returned.",
+};
+
 const fetchOrder = async (req, res, next) => {
   try {
     const orders = await OrderModel.find().populate({
@@ -45,9 +66,9 @@ const fetchUserOrder = async (req, res, next) => {
 
 const getUserOrder = async (req, res, next) => {
   try {
-    let order = await OrderModel.findById(req.params.id).populate(
-      "user  items.product"
-    ).lean();
+    let order = await OrderModel.findById(req.params.id)
+      .populate("user  items.product")
+      .lean();
 
     order.items = order.items.map((orderItem) => {
       let ci = {
@@ -63,12 +84,9 @@ const getUserOrder = async (req, res, next) => {
         }),
       ];
 
-
-      const variantConfig = ci.product.variantConfigs.find(
-        (variantConfig) => {
-          return variantConfig.status === "active";
-        }
-      );
+      const variantConfig = ci.product.variantConfigs.find((variantConfig) => {
+        return variantConfig.status === "active";
+      });
 
       if (variantConfig !== undefined) {
         ci.product.variants = variantConfig.variants;
@@ -77,9 +95,7 @@ const getUserOrder = async (req, res, next) => {
       }
 
       return ci;
-    })
-
-
+    });
 
     return res.json({ status: 200, data: { order } });
   } catch (error) {
@@ -87,9 +103,70 @@ const getUserOrder = async (req, res, next) => {
   }
 };
 
+const updateOrderStatus = async (req, res, next) => {
+  try {
+    const _id = req.body._id;
+
+    const oldOrder = await OrderModel.findById(_id);
+
+    const order = await OrderModel.updateOne(
+      {
+        _id: _id,
+      },
+      req.body
+    );
+
+    const newOrder = await OrderModel.findById(_id);
+
+    if (oldOrder.status !== newOrder.status) {
+      newOrder.timeline.push({
+        status: newOrder.status,
+        message: ORDER_MESSAGE[newOrder.status],
+      });
+
+      console.log(newOrder.timeline);
+    }
+
+    await newOrder.save();
+
+    return res.json({
+      status: 200,
+      data: {
+        id: _id,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateOrderShipping = async (req, res, next) => {
+  try {
+    const _id = req.body._id;
+
+    const order = await OrderModel.updateOne(
+      {
+        _id: _id,
+      },
+      req.body
+    );
+
+    return res.json({
+      status: 200,
+      data: {
+        id: _id,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const updateUserOrder = async (req, res, next) => {
   try {
-    const _id = req.body._id ?? new mongoose.Types.ObjectId();
+    const _id = req.body._id;
+
+    const oldOrder = await OrderModel.findById(_id);
 
     const order = await OrderModel.updateOne(
       {
@@ -101,6 +178,17 @@ const updateUserOrder = async (req, res, next) => {
         new: true,
       }
     );
+
+    const newOrder = await OrderModel.findById(_id);
+
+    if (oldOrder.status !== newOrder.status) {
+      newOrder.timeline.push({
+        status: newOrder.status,
+        message: ORDER_MESSAGE[newOrder.status],
+      });
+    }
+
+    await newOrder.save();
 
     return res.json({
       status: 200,
@@ -115,8 +203,8 @@ const updateUserOrder = async (req, res, next) => {
 
 const createUserOrder = async (req, res, next) => {
   try {
-    const user = await UserModel.findById(req.user.userId);
-    let items = await await Promise.all(
+    let user = await UserModel.findById(req.user.userId);
+    let items = await Promise.all(
       req.body.items.map(async (ci) => {
         // console.log(ci);
         let price = 0;
@@ -158,6 +246,19 @@ const createUserOrder = async (req, res, next) => {
       address: address,
     });
 
+    //emulate successful order
+    order.status = ORDER_STATUS.placed;
+
+    order.timeline.push({
+      status: ORDER_STATUS.placed,
+      message: ORDER_MESSAGE.placed,
+    });
+
+
+    order.paymentStatus = "success";
+
+    await order.save();
+
     // const transporter = nodemailer.createTransport({
     //   service: "Gmail",
     //   host: "smtp.gmail.com",
@@ -192,6 +293,10 @@ const createUserOrder = async (req, res, next) => {
     //   }
     // });
 
+    //let user = await UserModel.findById(req.user.userId);
+    user.cart = [];
+    await user.save();
+
     return res.json({
       status: 200,
       data: {
@@ -209,6 +314,8 @@ module.exports = {
   fetchUserOrder,
   getUserOrder,
   updateUserOrder,
+  updateOrderStatus,
+  updateOrderShipping,
   createUserOrder,
   fetchOrder,
   getOrder,

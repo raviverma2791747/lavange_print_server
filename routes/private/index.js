@@ -55,7 +55,11 @@ const {
   addUserWishlist,
   removeUserWishlist,
 } = require("../../controllers/wishlist");
-const { getUserCart, addUserCart, removeUserCart } = require("../../controllers/cart");
+const {
+  getUserCart,
+  addUserCart,
+  removeUserCart,
+} = require("../../controllers/cart");
 const {
   fetchUserAddress,
   getUserAddress,
@@ -68,6 +72,8 @@ const {
   createUserOrder,
   fetchOrder,
   getOrder,
+  updateOrderStatus,
+  updateOrderShipping,
 } = require("../../controllers/order");
 const { updateRole, getRole, fetchRole } = require("../../controllers/role");
 const { fetchRight } = require("../../controllers/right");
@@ -75,6 +81,10 @@ const admin = require("../../middlewares/admin");
 const { S3Client } = require("@aws-sdk/client-s3");
 const multerS3 = require("multer-s3");
 const dotenv = require("dotenv");
+const {
+  updateOrderStatusSchema,
+  updateOrderShippingSchema,
+} = require("../../validators/order");
 
 dotenv.config();
 
@@ -185,6 +195,22 @@ router.post(
 //Order
 router.get("/order", authenticate, admin, fetchOrder);
 router.get("/order/:id", authenticate, admin, getOrder);
+router.post("/order/create", authenticate, createUserOrder);
+router.post("/order/:id/shipping", authenticate, admin, updateUserOrder);
+router.post(
+  "/order/status",
+  authenticate,
+  admin,
+  validate(updateOrderStatusSchema),
+  updateOrderStatus
+);
+router.post(
+  "/order/shipping",
+  authenticate,
+  admin,
+  validate(updateOrderShippingSchema),
+  updateOrderShipping
+);
 router.get("/user/order", authenticate, fetchUserOrder);
 router.get("/user/order/:id", authenticate, getUserOrder);
 router.post("/user/order/create", authenticate, createUserOrder);
