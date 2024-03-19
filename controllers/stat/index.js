@@ -1,7 +1,7 @@
 const OrderModel = require("../../models/order");
 const UserModel = require("../../models/user");
 
-const getStats = async (req,  res, next) => {
+const getStats = async (req, res, next) => {
   try {
     const users = await UserModel.aggregate([
       {
@@ -28,7 +28,12 @@ const getStats = async (req,  res, next) => {
       },
     }).count();
 
-    return res.json({ status: 200, data: { users: users[0].count, orders } });
+    console.log(users);
+
+    return res.json({
+      status: 200,
+      data: { users: users.length ? users[0].count : 0, orders },
+    });
   } catch (error) {
     next(error);
   }
