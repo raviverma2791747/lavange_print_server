@@ -68,6 +68,17 @@ const getProduct = async (req, res, next) => {
       };
     });
 
+    product.variantConfigs.forEach((variantConfig) => {
+      variantConfig.variants.forEach((variant) => {
+        variant.assets = variant.assets.map((asset) => {
+          return {
+            ...asset,
+            url: assetUrl(asset.id),
+          };
+        });
+      });
+    });
+
     return res.json({
       status: 200,
       data: {
@@ -258,6 +269,7 @@ const getUserProduct = async (req, res, next) => {
         $match: {
           //_id: new mongoose.Types.ObjectId(req.params.id),
           slug: req.params.slug,
+          status: "active",
         },
       },
       {
@@ -346,6 +358,8 @@ const getUserProduct = async (req, res, next) => {
           barcode: 0,
           tags: 0,
           variantConfig: 0,
+          trackQuantity: 0,
+          inventoryQuantity: 0,
         },
       },
     ]);

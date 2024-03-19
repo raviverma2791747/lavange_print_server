@@ -60,12 +60,25 @@ const addUserCart = async (req, res, next) => {
     //check if product in cart only allow max 10 qunatity for a single product
     //check if product in cart only allow max 10 qunatity for a single product
 
-    let item = user.cart.find(
-      (cartItem) =>
-        cartItem.product.toString() === productId &&
-        cartItem.variant.toString() === variantId &&
-        cartItem.variantSchema.toString() === variantSchemaId
-    );
+    //console.log(user.cart)
+    let item = user.cart.find((cartItem) => {
+      if (
+        cartItem.product.equals(productId) &&
+        cartItem.variant &&
+        cartItem.variantSchema
+      ) {
+        if (variantId && variantSchemaId) {
+          return (
+            cartItem.product.equals(productId) &&
+            cartItem.variant?.equals(variantId) &&
+            cartItem.variantSchema?.equals(variantSchemaId)
+          );
+        } else {
+          return false;
+        }
+      }
+      return cartItem.product.equals(productId);
+    });
 
     if (item) {
       //make sure qunatity not gretare than 10

@@ -5,7 +5,7 @@ const { assetUrl } = require("../../helper/utils");
 
 dotenv.config();
 
-const fetchCollection = async (req,  res, next) => {
+const fetchCollection = async (req, res, next) => {
   try {
     const { status } = req.query;
 
@@ -27,8 +27,7 @@ const fetchCollection = async (req,  res, next) => {
   }
 };
 
-
-const getCollection = async (req,  res, next) => {
+const getCollection = async (req, res, next) => {
   try {
     let collection = await CollectionModel.findById({ _id: req.params.id })
       .populate("products")
@@ -60,7 +59,7 @@ const getCollection = async (req,  res, next) => {
   }
 };
 
-const updateCollection = async (req,  res, next) => {
+const updateCollection = async (req, res, next) => {
   try {
     const _id = req.body._id ?? new mongoose.Types.ObjectId();
     const collection = await CollectionModel.updateOne(
@@ -86,10 +85,13 @@ const updateCollection = async (req,  res, next) => {
   }
 };
 
-const getUserCollection = async (req,  res, next) => {
+const getUserCollectionSlug = async (req, res, next) => {
   try {
     let collection = await CollectionModel.findOne({ slug: req.params.slug })
-      .populate("products")
+      .populate({
+        path: "products",
+        match: { status: "active" },
+      })
       .lean();
 
     collection.assetUrl = assetUrl(collection.assetId);
@@ -101,6 +103,53 @@ const getUserCollection = async (req,  res, next) => {
           url: assetUrl(asset.id),
         };
       });
+
+      let vc = product.variantConfigs.find((variantConfig) => {
+        return variantConfig.status === "active";
+      });
+
+      if (vc) {
+        product.variants = vc.variants;
+      }
+    });
+
+    return res.json({
+      status: 200,
+      data: {
+        collection,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getUserCollection = async (req, res, next) => {
+  try {
+    let collection = await CollectionModel.findOne({ _id: req.params.id })
+      .populate({
+        path: "products",
+        match: { status: "active" },
+      })
+      .lean();
+
+    collection.assetUrl = assetUrl(collection.assetId);
+
+    collection.products.forEach((product) => {
+      product.assets = product.assets.map((asset) => {
+        return {
+          ...asset,
+          url: assetUrl(asset.id),
+        };
+      });
+
+      let vc = product.variantConfigs.find((variantConfig) => {
+        return variantConfig.status === "active";
+      });
+
+      if (vc) {
+        product.variants = vc.variants;
+      }
     });
 
     return res.json({
@@ -119,4 +168,5 @@ module.exports = {
   getCollection,
   updateCollection,
   getUserCollection,
+  getUserCollectionSlug,
 };

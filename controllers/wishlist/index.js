@@ -26,6 +26,12 @@ const addUserWishlist = async (req, res, next) => {
     const _id = req.user.userId;
     const user = await UserModel.findById(req.user.userId);
     const { productId } = req.body;
+    if (user.wishList.includes(productId)) {
+      return res.json({
+        status: 400,
+        message: "Product already added to wishlist",
+      });
+    }
     user.wishList.push(productId);
     await user.save();
 
