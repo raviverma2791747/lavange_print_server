@@ -20,6 +20,10 @@ const productSchema = new mongoose.Schema(
       type: mongoose.SchemaTypes.String,
       required: true,
     },
+    compareAtPrice: {
+      type: mongoose.SchemaTypes.Number,
+      default: 0,
+    },
     price: {
       type: mongoose.SchemaTypes.Number,
       default: 0,
@@ -118,6 +122,11 @@ const productSchema = new mongoose.Schema(
         ],
         variants: [
           {
+            assets: [
+              {
+                id: { type: mongoose.SchemaTypes.String },
+              },
+            ],
             sku: {
               type: mongoose.SchemaTypes.String,
               required: true,
@@ -125,6 +134,11 @@ const productSchema = new mongoose.Schema(
             },
             attributes: {
               type: mongoose.SchemaTypes.Mixed,
+            },
+            compareAtPrice: {
+              type: mongoose.SchemaTypes.Number,
+              required: true,
+              default: 0, // You can set a default value if needed
             },
             price: {
               type: mongoose.SchemaTypes.Number,
@@ -165,9 +179,9 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-productSchema.virtual("assets.url").get(function () {
-  return this.assets.map((asset) => assetUrl(asset.id)); // Construct the full URLs
-});
+// productSchema.virtual("assets.url").get(function () {
+//   return this.assets.map((asset) => assetUrl(asset.id)); // Construct the full URLs
+// });
 
 productSchema.set("toObject", { virtuals: true });
 productSchema.set("toJSON", { virtuals: true });

@@ -16,7 +16,7 @@ dotenv.config();
 //   });
 // };
 
-const getHomeConfig = async (req,  res, next) => {
+const getHomeConfig = async (req, res, next) => {
   try {
     const homeConfig = await HomeConfigModel.findOne();
     return res.json({
@@ -30,7 +30,7 @@ const getHomeConfig = async (req,  res, next) => {
   }
 };
 
-const updateHomeConfig = async (req,  res, next) => {
+const updateHomeConfig = async (req, res, next) => {
   try {
     const _id = req.body._id ?? new mongoose.Types.ObjectId();
     const homeConfig = await HomeConfigModel.updateOne(
@@ -56,9 +56,9 @@ const updateHomeConfig = async (req,  res, next) => {
   }
 };
 
-const getHomeConfigPublic = async (req,  res, next) => {
+const getHomeConfigPublic = async (req, res, next) => {
   try {
-    console.log(req.user)
+    console.log(req.user);
     // const homeConfig = await HomeConfigModel.aggregate([
     //   {
     //     $lookup: {
@@ -406,13 +406,14 @@ const getHomeConfigPublic = async (req,  res, next) => {
     let homeConfig = await HomeConfigModel.findOne()
       .populate("featuredCategories")
       .populate("featuredAnnouncements")
-      .populate("exploreProducts")
-      .populate("exploreCollections")
-      .populate("bestSellerProducts")
-      .populate("newArrivalProducts")
+      .populate({ path: "exploreProducts", match: { status: "active" } })
+      .populate({ path: "exploreCollections", match: { status: "active" } })
+      .populate({ path: "bestSellerProducts", match: { status: "active" } })
+      .populate({ path: "newArrivalProducts", match: { status: "active" } })
       .populate({
         path: "featuredCollections",
-        populate: { path: "products" },
+        match: { status: "active" },
+        populate: { path: "products", match: { status: "active" } },
       })
       .lean();
 
@@ -429,9 +430,17 @@ const getHomeConfigPublic = async (req,  res, next) => {
       product.assets = product.assets.map((asset) => {
         return {
           ...asset,
-          url:assetUrl(asset.id),
+          url: assetUrl(asset.id),
         };
       });
+
+      let vc = product.variantConfigs.find((variantConfig) => {
+        return variantConfig.status === "active";
+      });
+
+      if (vc) {
+        product.variants = vc.variants;
+      }
     });
 
     homeConfig.exploreCollections.forEach((collection) => {
@@ -445,6 +454,14 @@ const getHomeConfigPublic = async (req,  res, next) => {
           url: assetUrl(asset.id),
         };
       });
+
+      let vc = product.variantConfigs.find((variantConfig) => {
+        return variantConfig.status === "active";
+      });
+
+      if (vc) {
+        product.variants = vc.variants;
+      }
     });
 
     homeConfig.bestSellerProducts.forEach((product) => {
@@ -454,6 +471,14 @@ const getHomeConfigPublic = async (req,  res, next) => {
           url: assetUrl(asset.id),
         };
       });
+
+      let vc = product.variantConfigs.find((variantConfig) => {
+        return variantConfig.status === "active";
+      });
+
+      if (vc) {
+        product.variants = vc.variants;
+      }
     });
 
     homeConfig.featuredCollections.forEach((collection) => {
@@ -464,6 +489,14 @@ const getHomeConfigPublic = async (req,  res, next) => {
             url: assetUrl(asset.id),
           };
         });
+
+        let vc = product.variantConfigs.find((variantConfig) => {
+          return variantConfig.status === "active";
+        });
+
+        if (vc) {
+          product.variants = vc.variants;
+        }
       });
     });
 

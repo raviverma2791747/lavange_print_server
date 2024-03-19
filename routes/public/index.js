@@ -7,15 +7,19 @@ const {
 const {
   getUserCollection,
   fetchCollection,
+  getUserCollectionSlug,
 } = require("../../controllers/collection");
 const {
   loginUserPublic,
   userExistPublic,
   registerUserPublic,
   loginUserGooglePublic,
-  userLoginAdmin
+  userLoginAdmin,
 } = require("../../controllers/user");
-const { fetchCategory } = require("../../controllers/category");
+const {
+  fetchCategory,
+  getUserCategory,
+} = require("../../controllers/category");
 const { getSearchFilters } = require("../../controllers/search");
 
 const router = express.Router();
@@ -31,7 +35,9 @@ router.post("/user/login/google", loginUserGooglePublic);
 router.get("/category", fetchCategory);
 router.get("/collection", fetchCollection);
 
-router.get("/collection/:slug", getUserCollection);
+router.get("/collection/:id", getUserCollection);
+router.get("/collection/slug/:slug", getUserCollectionSlug);
+router.get("/category/:id", getUserCategory);
 router.get("/filters", getSearchFilters);
 
 module.exports = router;

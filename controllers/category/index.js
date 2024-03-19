@@ -1,7 +1,8 @@
 const mongoose = require("mongoose");
 const CategoryModel = require("../../models/category");
+const { assetUrl } = require("../../helper/utils");
 
-const fetchCategory = async (req,  res, next) => {
+const fetchCategory = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) - 1 || 0;
     const limit = parseInt(req.query.limit) || 10;
@@ -27,7 +28,7 @@ const fetchCategory = async (req,  res, next) => {
   }
 };
 
-const getCategory = async (req,  res, next) => {
+const getCategory = async (req, res, next) => {
   try {
     const category = await CategoryModel.findById({ _id: req.params.id });
     return res.json({
@@ -44,7 +45,7 @@ const getCategory = async (req,  res, next) => {
   }
 };
 
-const updateCategory = async (req,  res, next) => {
+const updateCategory = async (req, res, next) => {
   try {
     const _id = req.body._id ?? new mongoose.Types.ObjectId();
     const category = await CategoryModel.updateOne(
@@ -70,4 +71,48 @@ const updateCategory = async (req,  res, next) => {
   }
 };
 
-module.exports = { fetchCategory, getCategory, updateCategory };
+const getUserCategory = async (req, res, next) => {
+  try {
+    let category = await CategoryModel.findById({
+      _id: req.params.id,
+    }).populate({
+      path: "products",
+      match: { status: "active" },
+    }).lean();
+
+    category.assetUrl = assetUrl(category.assetId);
+
+    category.products.forEach((product) => {
+      product.assets = product.assets.map((asset) => {
+        return {
+          ...asset,
+          url: assetUrl(asset.id),
+        };
+      });
+
+      let vc = product.variantConfigs.find((variantConfig) => {
+        return variantConfig.status === "active";
+      });
+
+      if (vc) {
+        product.variants = vc.variants;
+      }
+    });
+
+    return res.json({
+      status: 200,
+      data: {
+        category,
+      },
+    });
+  } catch  (error) {
+    next(error);
+  }
+};
+
+module.exports = {
+  fetchCategory,
+  getCategory,
+  updateCategory,
+  getUserCategory,
+};
