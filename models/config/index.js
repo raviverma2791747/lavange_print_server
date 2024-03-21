@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const mongooseLeanVirtuals = require('mongoose-lean-virtuals');
 
 const configSchema = new mongoose.Schema(
   {
@@ -19,6 +20,7 @@ const configSchema = new mongoose.Schema(
     discriminatorKey: "type",
   }
 );
+configSchema.plugin(mongooseLeanVirtuals);
 
 //Home config
 const homeConfigSchema = new mongoose.Schema(
@@ -76,6 +78,7 @@ const homeConfigSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+homeConfigSchema.plugin(mongooseLeanVirtuals);
 
 const ConfigModel = mongoose.model("config", configSchema);
 const HomeConfigModel = ConfigModel.discriminator("home", homeConfigSchema);

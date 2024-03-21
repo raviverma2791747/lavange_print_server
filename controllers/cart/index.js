@@ -5,44 +5,24 @@ const { assetUrl } = require("../../helper/utils");
 const getUserCart = async (req, res, next) => {
   try {
     const _id = req.user.userId;
-    let user = await UserModel.findById(_id).populate("cart.product").lean();
+    let user = await UserModel.findById(_id).populate({
+      path: "cart",
+      populate: {
+        path: "product",
+        populate: {
+          path: "assets",
+          select: "_id url title",
+        },
+      },
+    }).lean({
+      virtuals: true,
+    });
 
     // console.log(user.cart[0].product.assets);
     return res.json({
       status: 200,
       data: {
-        cart: user.cart.map((cartItem) => {
-          let ci = {
-            ...cartItem,
-          };
-
-          ci.product.assets = [
-            ...ci.product.assets.map((asset) => {
-              return {
-                ...asset,
-                url: assetUrl(asset.id),
-              };
-            }),
-          ];
-
-          //console.log(ci.product);
-
-          const variantConfig = ci.product.variantConfigs.find(
-            (variantConfig) => {
-              return variantConfig.status === "active";
-            }
-          );
-
-          if (variantConfig !== undefined) {
-            ci.product.variants = variantConfig.variants;
-            ci.product.variantOptions = variantConfig.variantSchema;
-            ci.product.schemaId = variantConfig._id;
-          }
-
-          //delete ci.product.variantConfigs;
-          //console.log(ci.product.assets);
-          return ci;
-        }),
+        cart: user.cart,
       },
     });
   } catch (error) {

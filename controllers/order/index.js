@@ -67,35 +67,19 @@ const fetchUserOrder = async (req, res, next) => {
 const getUserOrder = async (req, res, next) => {
   try {
     let order = await OrderModel.findById(req.params.id)
-      .populate("user  items.product")
-      .lean();
-
-    order.items = order.items.map((orderItem) => {
-      let ci = {
-        ...orderItem,
-      };
-
-      ci.product.assets = [
-        ...ci.product.assets.map((asset) => {
-          return {
-            ...asset,
-            url: assetUrl(asset.id),
-          };
-        }),
-      ];
-
-      const variantConfig = ci.product.variantConfigs.find((variantConfig) => {
-        return variantConfig.status === "active";
+      .populate("user")
+      .populate({
+        path: "items.product",
+        populate: {
+          path: "assets",
+          select: "_id url title",
+        },
+      })
+      .lean({
+        virtuals: true,
       });
 
-      if (variantConfig !== undefined) {
-        ci.product.variants = variantConfig.variants;
-        ci.product.variantOptions = variantConfig.variantSchema;
-        ci.product.schemaId = variantConfig._id;
-      }
 
-      return ci;
-    });
 
     return res.json({ status: 200, data: { order } });
   } catch (error) {

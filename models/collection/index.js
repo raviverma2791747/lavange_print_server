@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const mongooseLeanVirtuals = require("mongoose-lean-virtuals");
 
 const collectionSchema = new mongoose.Schema(
   {
@@ -11,8 +12,10 @@ const collectionSchema = new mongoose.Schema(
       type: mongoose.SchemaTypes.String,
       required: true,
     },
-    assetId: {
+    asset: {
       type: mongoose.SchemaTypes.String,
+      ref: "image",
+      required: true,
     },
     status: {
       type: mongoose.SchemaTypes.String,
@@ -38,10 +41,12 @@ collectionSchema.virtual("products", {
 collectionSchema.set("toJSON", {
   virtuals: true,
 });
+
 collectionSchema.set("toObject", {
   virtuals: true,
 });
 
+collectionSchema.plugin(mongooseLeanVirtuals);
 const CollectionModel = mongoose.model("collection", collectionSchema);
 
 module.exports = CollectionModel;
