@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const mongooseLeanVirtuals = require("mongoose-lean-virtuals");
 
 const announcementSchema = new mongoose.Schema(
   {
@@ -6,8 +7,9 @@ const announcementSchema = new mongoose.Schema(
       type: mongoose.SchemaTypes.String,
       required: true,
     },
-    assetId: {
+    asset: {
       type: mongoose.SchemaTypes.String,
+      ref: "image",
       required: true,
     },
     ctaUrl: {
@@ -24,6 +26,7 @@ const announcementSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+announcementSchema.plugin(mongooseLeanVirtuals);
 const AnnouncementModel = mongoose.model("announcement", announcementSchema);
 
 module.exports = AnnouncementModel;

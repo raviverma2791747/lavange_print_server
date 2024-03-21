@@ -13,12 +13,6 @@ const fetchAnnouncement = async (req,  res, next) => {
     }
 
     let announcements = await AnnouncementModel.find(filter).lean();
-    announcements = announcements.map((announcement) => {
-      return {
-        ...announcement,
-        assetUrl: assetUrl(announcement.assetId),
-      };
-    });
 
     return res.json({
       status: 200,
@@ -36,8 +30,6 @@ const getAnnouncement = async (req,  res, next) => {
     let announcement = await AnnouncementModel.findById({
       _id: req.params.id,
     }).lean();
-
-    announcement.assetUrl = assetUrl(announcement.assetId);
 
     return res.json({
       status: 200,

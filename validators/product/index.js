@@ -8,13 +8,7 @@ const schema = {
       type: "array",
       items: [
         {
-          type: "object",
-          properties: {
-            id: {
-              type: "string",
-            },
-          },
-          required: ["id"],
+          type: "string",
         },
       ],
     },
@@ -149,13 +143,7 @@ const schema = {
                       type: "array",
                       items: [
                         {
-                          type: "object",
-                          properties: {
-                            id: {
-                              type: "string",
-                            },
-                          },
-                          required: ["id"],
+                          type: "string",
                         },
                       ],
                     },
@@ -178,7 +166,14 @@ const schema = {
       ],
     },
   },
-  required: ["title", "description", "price", "status", "variantConfigs", 'assets'],
+  required: [
+    "title",
+    "description",
+    "price",
+    "status",
+    "variantConfigs",
+    "assets",
+  ],
   additionalProperties: true,
 };
 

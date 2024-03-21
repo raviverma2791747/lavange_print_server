@@ -30,23 +30,16 @@ const fetchCollection = async (req, res, next) => {
 const getCollection = async (req, res, next) => {
   try {
     let collection = await CollectionModel.findById({ _id: req.params.id })
-      .populate("products")
-      .lean();
+      .populate({
+        path: "products",
+        match: { status: "active" },
+        populate: {
+          path: "assets",
+          select: "_id url title",
+        }
+      })
+      .lean({virtuals: true});
 
-    if (process.env.NODE_ENV === "production") {
-      collection.assetUrl = `${process.env.AWS_S3_URL}/${collection.assetId}`;
-    } else {
-      collection.assetUrl = assetUrl(collection.assetId);
-    }
-
-    collection.products.forEach((product) => {
-      product.assets = product.assets.map((asset) => {
-        return {
-          ...asset,
-          url: assetUrl(asset.id),
-        };
-      });
-    });
 
     return res.json({
       status: 200,
@@ -91,27 +84,14 @@ const getUserCollectionSlug = async (req, res, next) => {
       .populate({
         path: "products",
         match: { status: "active" },
+        populate: {
+          path: "assets",
+          select: "_id url title",
+        }
       })
-      .lean();
-
-    collection.assetUrl = assetUrl(collection.assetId);
-
-    collection.products.forEach((product) => {
-      product.assets = product.assets.map((asset) => {
-        return {
-          ...asset,
-          url: assetUrl(asset.id),
-        };
+      .lean({
+        virtuals: true,
       });
-
-      let vc = product.variantConfigs.find((variantConfig) => {
-        return variantConfig.status === "active";
-      });
-
-      if (vc) {
-        product.variants = vc.variants;
-      }
-    });
 
     return res.json({
       status: 200,
@@ -129,28 +109,15 @@ const getUserCollection = async (req, res, next) => {
     let collection = await CollectionModel.findOne({ _id: req.params.id })
       .populate({
         path: "products",
+        populate: {
+          path: "assets",
+          select: "_id url title",
+        },
         match: { status: "active" },
       })
-      .lean();
-
-    collection.assetUrl = assetUrl(collection.assetId);
-
-    collection.products.forEach((product) => {
-      product.assets = product.assets.map((asset) => {
-        return {
-          ...asset,
-          url: assetUrl(asset.id),
-        };
+      .lean({
+        virtuals: true,
       });
-
-      let vc = product.variantConfigs.find((variantConfig) => {
-        return variantConfig.status === "active";
-      });
-
-      if (vc) {
-        product.variants = vc.variants;
-      }
-    });
 
     return res.json({
       status: 200,

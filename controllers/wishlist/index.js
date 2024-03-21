@@ -5,16 +5,18 @@ const { assetUrl } = require("../../helper/utils");
 const getUserWishlist = async (req, res, next) => {
   try {
     const _id = req.user.userId;
-    let user = await UserModel.findById(_id).populate("wishList").lean();
-
-    user.wishList.forEach((product) => {
-      product.assets = product.assets.map((asset) => {
-        return {
-          ...asset,
-          url: assetUrl(asset.id),
-        };
+    let user = await UserModel.findById(_id)
+      .populate({
+        path: "wishList",
+        populate: {
+          path: "assets",
+          select: "_id url title",
+        },
+      })
+      .lean({
+        virtuals: true,
       });
-    });
+
     return res.json({ status: 200, data: { wishList: user.wishList } });
   } catch (error) {
     next(error);

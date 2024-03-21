@@ -1,4 +1,6 @@
 const mongoose = require("mongoose");
+const mongooseLeanVirtuals = require("mongoose-lean-virtuals");
+
 const { assetUrl } = require("../../helper/utils");
 
 const productSchema = new mongoose.Schema(
@@ -75,7 +77,8 @@ const productSchema = new mongoose.Schema(
     },
     assets: [
       {
-        id: { type: mongoose.SchemaTypes.String },
+        type: mongoose.SchemaTypes.String,
+        ref: "image",
       },
     ],
     variantConfigs: [
@@ -124,7 +127,8 @@ const productSchema = new mongoose.Schema(
           {
             assets: [
               {
-                id: { type: mongoose.SchemaTypes.String },
+                type: mongoose.SchemaTypes.String,
+                ref: "image",
               },
             ],
             sku: {
@@ -145,11 +149,6 @@ const productSchema = new mongoose.Schema(
               required: true,
               default: 0, // You can set a default value if needed
             },
-            assets: [
-              {
-                id: { type: mongoose.SchemaTypes.String },
-              },
-            ],
             inventoryQuantity: {
               type: mongoose.SchemaTypes.Number,
               required: true,
@@ -179,13 +178,34 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// productSchema.virtual("assets.url").get(function () {
-//   return this.assets.map((asset) => assetUrl(asset.id)); // Construct the full URLs
-// });
+productSchema.virtual("variants").get(function () {
+  const v = this.variantConfigs.find((config) => config.status === "active");
+  if (v) {
+    return v.variants;
+  }
+  return null;
+});
+
+productSchema.virtual("variantOptions").get(function () {
+  const v = this.variantConfigs.find((config) => config.status === "active");
+  if (v) {
+    return v.variantSchema;
+  }
+  return null;
+});
+
+productSchema.virtual("schemaId").get(function () {
+  const v = this.variantConfigs.find((config) => config.status === "active");
+  if (v) {
+    return v._id;
+  }
+  return null;
+});
 
 productSchema.set("toObject", { virtuals: true });
 productSchema.set("toJSON", { virtuals: true });
 
+productSchema.plugin(mongooseLeanVirtuals);
 const ProductModel = mongoose.model("product", productSchema);
 
 module.exports = ProductModel;

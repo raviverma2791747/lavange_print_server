@@ -3,11 +3,11 @@ const schema = {
   properties: {
     _id: { type: "string" },
     title: { type: "string" },
-    assetId: { type: "string" },
+    asset: { type: "string" },
     ctaUrl: { type: "string" },
     status: { type: "string", enum: ["active", "draft", "archive"] },
   },
-  required: ["title", "assetId", "ctaUrl", "status"],
+  required: ["title", "asset", "ctaUrl", "status"],
   additionalProperties: true,
 };
 

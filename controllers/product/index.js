@@ -23,16 +23,11 @@ const fetchProduct = async (req, res, next) => {
     })
       .skip(page * limit)
       .limit(limit)
+      .populate({
+        path: "assets",
+        select: "_id url title",
+      })
       .lean();
-
-    products.forEach((product) => {
-      product.assets = product.assets.map((asset) => {
-        return {
-          ...asset,
-          url: assetUrl(asset.id),
-        };
-      });
-    });
 
     const total = await ProductModel.countDocuments({
       title: {
@@ -60,24 +55,6 @@ const getProduct = async (req, res, next) => {
     let product = await ProductModel.findById({ _id: req.params.id })
       .populate("tags collections category")
       .lean();
-
-    product.assets = product.assets.map((asset) => {
-      return {
-        ...asset,
-        url: assetUrl(asset.id),
-      };
-    });
-
-    product.variantConfigs.forEach((variantConfig) => {
-      variantConfig.variants.forEach((variant) => {
-        variant.assets = variant.assets.map((asset) => {
-          return {
-            ...asset,
-            url: assetUrl(asset.id),
-          };
-        });
-      });
-    });
 
     return res.json({
       status: 200,
@@ -264,133 +241,126 @@ const fetchUserProduct = async (req, res, next) => {
 
 const getUserProduct = async (req, res, next) => {
   try {
-    const product = await ProductModel.aggregate([
-      {
-        $match: {
-          //_id: new mongoose.Types.ObjectId(req.params.id),
-          slug: req.params.slug,
-          status: "active",
-        },
-      },
-      {
-        $addFields: {
-          assets: {
-            $map: {
-              input: "$assets",
-              as: "asset",
-              in: {
-                $mergeObjects: [
-                  "$$asset",
-                  {
-                    url: {
-                      $concat: [assetUrl(""), "$$asset.id"],
-                    },
-                  },
-                ],
-              },
-            },
-          },
-          variantConfig: {
-            $first: {
-              $filter: {
-                input: "$variantConfigs",
-                as: "variantConfig",
-                cond: {
-                  $eq: ["$$variantConfig.status", "active"],
-                },
-              },
-            },
-          },
-        },
-      },
-      {
-        $addFields: {
-          variants: { $ifNull: ["$variantConfig.variants", null] },
-          variantOptions: {
-            $ifNull: [
-              {
-                $map: {
-                  input: "$variantConfig.variantSchema",
-                  as: "variantSchema",
-                  in: {
-                    displayName: "$$variantSchema.displayName",
-                    name: "$$variantSchema.name",
-                    type: "$$variantSchema.type",
-                    options: {
-                      $filter: {
-                        input: "$$variantSchema.options",
-                        as: "option",
-                        cond: {
-                          $eq: ["$$option.status", "active"],
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-              null,
-            ],
-          },
-          schemaId: { $ifNull: ["$variantConfig._id", null] },
-        },
-      },
-      {
-        $lookup: {
-          from: "categories",
-          localField: "category",
-          foreignField: "_id",
-          as: "category",
-        },
-      },
-      {
-        $set: {
-          category: {
-            $first: "$category",
-          }
-        }
-      },
-      {
-        $project: {
-          variantConfigs: 0,
-          shippingWeight: 0,
-          isDigitalProduct: 0,
-          hasSKU: 0,
-          barcode: 0,
-          tags: 0,
-          variantConfig: 0,
-          trackQuantity: 0,
-          inventoryQuantity: 0,
-        },
-      },
-    ]);
+    // const product = await ProductModel.aggregate([
+    //   {
+    //     $match: {
+    //       //_id: new mongoose.Types.ObjectId(req.params.id),
+    //       slug: req.params.slug,
+    //       status: "active",
+    //     },
+    //   },
+    //   {
+    //     $addFields: {
+    //       assets: {
+    //         $map: {
+    //           input: "$assets",
+    //           as: "asset",
+    //           in: {
+    //             $mergeObjects: [
+    //               "$$asset",
+    //               {
+    //                 url: {
+    //                   $concat: [assetUrl(""), "$$asset.id"],
+    //                 },
+    //               },
+    //             ],
+    //           },
+    //         },
+    //       },
+    //       variantConfig: {
+    //         $first: {
+    //           $filter: {
+    //             input: "$variantConfigs",
+    //             as: "variantConfig",
+    //             cond: {
+    //               $eq: ["$$variantConfig.status", "active"],
+    //             },
+    //           },
+    //         },
+    //       },
+    //     },
+    //   },
+    //   {
+    //     $addFields: {
+    //       variants: { $ifNull: ["$variantConfig.variants", null] },
+    //       variantOptions: {
+    //         $ifNull: [
+    //           {
+    //             $map: {
+    //               input: "$variantConfig.variantSchema",
+    //               as: "variantSchema",
+    //               in: {
+    //                 displayName: "$$variantSchema.displayName",
+    //                 name: "$$variantSchema.name",
+    //                 type: "$$variantSchema.type",
+    //                 options: {
+    //                   $filter: {
+    //                     input: "$$variantSchema.options",
+    //                     as: "option",
+    //                     cond: {
+    //                       $eq: ["$$option.status", "active"],
+    //                     },
+    //                   },
+    //                 },
+    //               },
+    //             },
+    //           },
+    //           null,
+    //         ],
+    //       },
+    //       schemaId: { $ifNull: ["$variantConfig._id", null] },
+    //     },
+    //   },
+    //   {
+    //     $lookup: {
+    //       from: "categories",
+    //       localField: "category",
+    //       foreignField: "_id",
+    //       as: "category",
+    //     },
+    //   },
+    //   {
+    //     $set: {
+    //       category: {
+    //         $first: "$category",
+    //       }
+    //     }
+    //   },
+    //   {
+    //     $project: {
+    //       variantConfigs: 0,
+    //       shippingWeight: 0,
+    //       isDigitalProduct: 0,
+    //       hasSKU: 0,
+    //       barcode: 0,
+    //       tags: 0,
+    //       variantConfig: 0,
+    //       trackQuantity: 0,
+    //       inventoryQuantity: 0,
+    //     },
+    //   },
+    // ]);
 
-    // let product = await ProductModel.findById({ _id: req.params.id })
-    //   .populate("category")
-    //   .lean();
+    let product = await ProductModel.findOne({
+      slug: req.params.slug,
+      status: "active",
+    })
+      .populate("category")
+      .populate({
+        path: "assets",
+        select: "_id url title",
+      })
+      .select(
+        "-shippingWeight -isDigitalProduct -hasSKU -barcode -tags -trackQuantity -inventoryQuantity"
+      )
+      .lean({ virtuals: true });
 
-    // product.assets = product.assets.map((asset) => {
-    //   return {
-    //     ...asset,
-    //     url: `${process.env.BASE_URI}:${process.env.PORT || 3000}/media/${asset.id}`,
-    //   };
-    // });
-
-    // const variantConfig = product.variantConfigs.find((variantConfig) => {
-    //   return variantConfig.status === "active";
-    // });
-
-    // if (variantConfig !== undefined) {
-    //   product.variants = variantConfig.variants;
-    //   product.variantOptions = variantConfig.variantSchema;
-    //   product.schemaId = variantConfig._id;
-    // }
-
-    // delete product.variantConfigs;
+    delete product.variantConfigs;
 
     return res.json({
       status: 200,
       data: {
-        product: product[0],
+        product: product,
       },
     });
   } catch (error) {

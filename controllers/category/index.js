@@ -75,29 +75,18 @@ const getUserCategory = async (req, res, next) => {
   try {
     let category = await CategoryModel.findById({
       _id: req.params.id,
-    }).populate({
-      path: "products",
-      match: { status: "active" },
-    }).lean();
-
-    category.assetUrl = assetUrl(category.assetId);
-
-    category.products.forEach((product) => {
-      product.assets = product.assets.map((asset) => {
-        return {
-          ...asset,
-          url: assetUrl(asset.id),
-        };
+    })
+      .populate({
+        path: "products",
+        populate: {
+          path: "assets",
+          select: "_id url title",
+        },
+        match: { status: "active" },
+      })
+      .lean({
+        virtuals: true,
       });
-
-      let vc = product.variantConfigs.find((variantConfig) => {
-        return variantConfig.status === "active";
-      });
-
-      if (vc) {
-        product.variants = vc.variants;
-      }
-    });
 
     return res.json({
       status: 200,
@@ -105,7 +94,7 @@ const getUserCategory = async (req, res, next) => {
         category,
       },
     });
-  } catch  (error) {
+  } catch (error) {
     next(error);
   }
 };
