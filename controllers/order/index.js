@@ -6,6 +6,9 @@ const dotenv = require("dotenv");
 const nodemailer = require("nodemailer");
 const { mailTemplate } = require("../../helper/template");
 const { assetUrl } = require("../../helper/utils");
+const { getCartPopulated } = require("../../helper/cart");
+const { validateCoupon } = require("../../helper/coupon");
+const CouponModel = require("../../models/coupon");
 
 dotenv.config();
 
@@ -17,7 +20,7 @@ const ORDER_STATUS = {
   cancelled: "cancelled",
   delivered: "delivered",
   returned: "returned",
-}
+};
 
 const ORDER_MESSAGE = {
   //write message for each status
@@ -78,8 +81,6 @@ const getUserOrder = async (req, res, next) => {
       .lean({
         virtuals: true,
       });
-
-
 
     return res.json({ status: 200, data: { order } });
   } catch (error) {
@@ -188,46 +189,56 @@ const updateUserOrder = async (req, res, next) => {
 const createUserOrder = async (req, res, next) => {
   try {
     let user = await UserModel.findById(req.user.userId);
-    let items = await Promise.all(
-      req.body.items.map(async (ci) => {
-        // console.log(ci);
-        let price = 0;
-        let product = await ProductModel.findById(ci.product);
-        let variant;
-        if (ci.variant) {
-          let variantConfig = product.variantConfigs.id(ci.variantSchema);
-          variant = variantConfig.variants.id(ci.variant);
-        } else {
-          price = product.price;
-        }
-
-        if (variant) {
-          price = variant.price;
-        }
-
-        // console.log({
-        //   product: ci.product,
-        //   quantity: ci.quantity,
-        //   variant: ci.variant,
-        //   variantSchema: ci.variantSchema,
-        //   price: price,
-        // });
-
-        return {
-          product: ci.product,
-          quantity: ci.quantity,
-          variant: ci.variant,
-          variantSchema: ci.variantSchema,
-          price: price,
-        };
-      })
-    );
+    let items = await getCartPopulated(req.body.items);
     let address = user.addresses.id(req.body.address);
+    let coupon_code = req.body.coupon_code;
+    let discount = 0;
+    let coupon;
+    if (coupon_code) {
+      const vc = await validateCoupon(coupon_code, items, user._id);
+
+      if (vc.status === 200) {
+        discount = vc.data.discount;
+        coupon = await CouponModel.findOne({ code: coupon_code.toLowerCase() });
+
+        if (!coupon) {
+          return res.json({
+            status: 400,
+            data: {},
+          });
+        }
+      } else {
+        return res.json({
+          status: 400,
+          data: {},
+        });
+      }
+    }
+
+    const cartTotal = items.reduce((acc, item) => {
+      if (item.compareAtPrice) {
+        return acc + item.compareAtPrice * item.quantity;
+      }
+      return acc + item.price * item.quantity;
+    }, 0);
+
+    const actualTotal = items.reduce((acc, item) => {
+      return acc + item.price * item.quantity;
+    }, 0);
+
+    if (!discount) {
+      discount = cartTotal - actualTotal;
+    }
+
+    const grandTotal = cartTotal - discount;
 
     const order = await OrderModel.create({
       user: user._id,
       items: items,
       address: address,
+      discount: discount,
+      coupon: coupon?._id,
+      total: grandTotal,
     });
 
     //emulate successful order
@@ -237,7 +248,6 @@ const createUserOrder = async (req, res, next) => {
       status: ORDER_STATUS.placed,
       message: ORDER_MESSAGE.placed,
     });
-
 
     order.paymentStatus = "success";
 

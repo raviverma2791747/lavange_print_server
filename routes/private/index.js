@@ -20,7 +20,13 @@ const {
   fetchProduct,
   updateProduct,
 } = require("../../controllers/product");
-const { updateImage, getImage, fetchImage, createImage, deleteImage } = require("../../controllers/image");
+const {
+  updateImage,
+  getImage,
+  fetchImage,
+  createImage,
+  deleteImage,
+} = require("../../controllers/image");
 const { fetchTag, getTag, updateTag } = require("../../controllers/tag");
 const {
   getAnnouncement,
@@ -76,6 +82,11 @@ const {
   updateOrderStatus,
   updateOrderShipping,
 } = require("../../controllers/order");
+const {
+  getCoupon,
+  fetchCoupon,
+  updateCoupon,
+} = require("../../controllers/coupon");
 const { updateRole, getRole, fetchRole } = require("../../controllers/role");
 const { fetchRight } = require("../../controllers/right");
 const admin = require("../../middlewares/admin");
@@ -110,7 +121,12 @@ if (process.env.NODE_ENV === "production") {
       cb(null, { fieldName: file.fieldname });
     },
     key: function (req, file, cb) {
-      cb(null, `image-${new mongoose.Types.ObjectId().toString()}${path.extname(file.originalname)}`);
+      cb(
+        null,
+        `image-${new mongoose.Types.ObjectId().toString()}${path.extname(
+          file.originalname
+        )}`
+      );
     },
   });
 } else {
@@ -119,7 +135,12 @@ if (process.env.NODE_ENV === "production") {
       cb(null, `${process.env.MEDIA_PATH}/`); // Specify the upload directory
     },
     filename: (req, file, cb) => {
-      cb(null, `image-${new mongoose.Types.ObjectId().toString()}${path.extname(file.originalname)}`); // Use original filename
+      cb(
+        null,
+        `image-${new mongoose.Types.ObjectId().toString()}${path.extname(
+          file.originalname
+        )}`
+      ); // Use original filename
     },
   });
 }
@@ -159,14 +180,20 @@ router.post(
   "/product",
   authenticate,
   admin,
- validate(productSchema),
+  validate(productSchema),
   updateProduct
 );
 
 //Image
-router.post("/image/upload", authenticate, admin, upload.single("img"), createImage);
-router.post("/image", authenticate, admin,updateImage);
-router.get("/image/:id", authenticate, admin,  getImage);
+router.post(
+  "/image/upload",
+  authenticate,
+  admin,
+  upload.single("img"),
+  createImage
+);
+router.post("/image", authenticate, admin, updateImage);
+router.get("/image/:id", authenticate, admin, getImage);
 router.get("/image", authenticate, admin, fetchImage);
 router.delete("/image/:id", authenticate, admin, deleteImage);
 
@@ -220,6 +247,17 @@ router.get("/user/order", authenticate, fetchUserOrder);
 router.get("/user/order/:id", authenticate, getUserOrder);
 router.post("/user/order/create", authenticate, createUserOrder);
 router.post("/user/order", authenticate, updateUserOrder);
+
+//Coupons
+router.get("/coupon", authenticate, admin, fetchCoupon);
+router.get("/coupon/:id", authenticate, admin, getCoupon);
+router.post(
+  "/coupon",
+  authenticate,
+  admin,
+  // validate(couponSchema),
+  updateCoupon
+);
 
 //Wishlist
 router.get("/user/wishlist", authenticate, getUserWishlist);
