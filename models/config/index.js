@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const mongooseLeanVirtuals = require('mongoose-lean-virtuals');
+const mongooseLeanVirtuals = require("mongoose-lean-virtuals");
 
 const configSchema = new mongoose.Schema(
   {
@@ -7,10 +7,11 @@ const configSchema = new mongoose.Schema(
       type: mongoose.SchemaTypes.String,
       required: true,
       unique: true,
+      index: true,
     },
     status: {
       type: mongoose.SchemaTypes.String,
-      enum: ["draft", "active", "archive"], 
+      enum: ["draft", "active", "archive"],
       default: "draft",
       required: true,
     },
@@ -59,20 +60,20 @@ const homeConfigSchema = new mongoose.Schema(
       {
         type: mongoose.SchemaTypes.ObjectId,
         ref: "product",
-      }
+      },
     ],
     exploreCollections: [
       {
         type: mongoose.SchemaTypes.ObjectId,
         ref: "collection",
-      }
+      },
     ],
     exploreProducts: [
       {
         type: mongoose.SchemaTypes.ObjectId,
         ref: "product",
-      }
-    ]
+      },
+    ],
   },
   {
     timestamps: true,
@@ -80,7 +81,25 @@ const homeConfigSchema = new mongoose.Schema(
 );
 homeConfigSchema.plugin(mongooseLeanVirtuals);
 
+//Delivery & Return Policy
+const policyConfigSchema = new mongoose.Schema(
+  {
+    description: {
+      type: mongoose.SchemaTypes.String,
+      required: true,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+policyConfigSchema.plugin(mongooseLeanVirtuals);
+
 const ConfigModel = mongoose.model("config", configSchema);
 const HomeConfigModel = ConfigModel.discriminator("home", homeConfigSchema);
+const PolicyConfigModel = ConfigModel.discriminator(
+  "policy",
+  policyConfigSchema
+);
 
-module.exports = { ConfigModel, HomeConfigModel };
+module.exports = { ConfigModel, HomeConfigModel, PolicyConfigModel };

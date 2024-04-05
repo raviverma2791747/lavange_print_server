@@ -66,6 +66,7 @@ const {
   getUserCart,
   addUserCart,
   removeUserCart,
+  deleteUserCart,
 } = require("../../controllers/cart");
 const {
   fetchUserAddress,
@@ -97,6 +98,8 @@ const {
   updateOrderStatusSchema,
   updateOrderShippingSchema,
 } = require("../../validators/order");
+const { getPolicyConfig, updatePolicyConfig } = require("../../controllers/policyconfig");
+const expressAsyncHandler = require("express-async-handler");
 
 dotenv.config();
 
@@ -268,6 +271,7 @@ router.post("/user/wishlist/remove", authenticate, removeUserWishlist);
 router.get("/user/cart", authenticate, getUserCart);
 router.post("/user/cart/add", authenticate, addUserCart);
 router.post("/user/cart/remove", authenticate, removeUserCart);
+router.post("/user/cart/delete", authenticate, deleteUserCart);
 
 //Address
 router.get("/user/address", authenticate, fetchUserAddress);
@@ -300,6 +304,19 @@ router.get("/stats", authenticate, admin, getStats);
 router.get("/config/home", authenticate, getHomeConfig);
 //router.get("/config/home/:id", getHomeConfig);
 router.post("/config/home", authenticate, admin, updateHomeConfig);
+router.get(
+  "/config/policy/:name",
+  authenticate,
+  admin,
+  expressAsyncHandler(getPolicyConfig)
+);
+router.post(
+  "/config/policy",
+  authenticate,
+  admin,
+  expressAsyncHandler(updatePolicyConfig)
+);
+
 
 //User Routes
 

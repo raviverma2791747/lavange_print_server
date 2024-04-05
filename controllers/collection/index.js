@@ -36,10 +36,9 @@ const getCollection = async (req, res, next) => {
         populate: {
           path: "assets",
           select: "_id url title",
-        }
+        },
       })
-      .lean({virtuals: true});
-
+      .lean({ virtuals: true });
 
     return res.json({
       status: 200,
@@ -87,7 +86,7 @@ const getUserCollectionSlug = async (req, res, next) => {
         populate: {
           path: "assets",
           select: "_id url title",
-        }
+        },
       })
       .lean({
         virtuals: true,
@@ -130,10 +129,33 @@ const getUserCollection = async (req, res, next) => {
   }
 };
 
+const fetchUserCollection = async (req, res, next) => {
+  try {
+    const collections = await CollectionModel.find({
+      status: "active",
+    })
+      .populate({
+        path: "asset",
+        select: "_id url title",
+      })
+      .lean({ virtuals: true });
+
+    return res.json({
+      status: 200,
+      data: {
+        collections,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   fetchCollection,
   getCollection,
   updateCollection,
   getUserCollection,
   getUserCollectionSlug,
+  fetchUserCollection,
 };

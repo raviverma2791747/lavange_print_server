@@ -26,6 +26,7 @@ const getUserCheckout = async (req, res, next) => {
 
     const vc = await validateCoupon(coupon_code, cartp, userID);
 
+    console.log(vc);
     if (vc.status === 200) {
       discount = vc.data.discount;
       couponValid = true;

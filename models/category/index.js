@@ -20,6 +20,11 @@ const categorySchema = new mongoose.Schema(
       unique: true,
       index: true,
     },
+    asset: {
+      type: mongoose.SchemaTypes.String,
+      ref: "image",
+      required: true,
+    },
   },
   { timestamps: true }
 );

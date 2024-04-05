@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const { HomeConfigModel } = require("../models/config");
+const { HomeConfigModel, PolicyConfigModel } = require("../models/config");
 const { STATUS } = require("./constants");
 const RoleModel = require("../models/role");
 const RightType = require("../models/right");
@@ -99,11 +99,71 @@ const initHomeConfig = async () => {
   }
 };
 
+const initPolicyConfig = async () => {
+  try {
+    const privacyPolicyConfig = await PolicyConfigModel.findOne({
+      name: "privacy-policy",
+    });
+    if (!privacyPolicyConfig) {
+      await PolicyConfigModel.create({
+        name: "privacy-policy",
+        status: STATUS.ACTIVE,
+        description: "Privacy Policy",
+      });
+      console.log("Privacy Policy config created");
+      return;
+    }
+    console.log("Privacy Policy already exists");
+  } catch (error) {
+    console.log("Privacy Policy creation failed!");
+    console.log(error);
+  }
+
+  try {
+    const privacyPolicyConfig = await PolicyConfigModel.findOne({
+      name: "terms-and-conditions",
+    });
+    if (!privacyPolicyConfig) {
+      await PolicyConfigModel.create({
+        name: "terms-and-conditions",
+        status: STATUS.ACTIVE,
+        description: "Terms and Conditions",
+      });
+      console.log("Terms and Conditions Policy config created");
+      return;
+    }
+    console.log("Terms and Conditions Policy already exists");
+  } catch (error) {
+    console.log("Terms and Conditions Policy creation failed!");
+    console.log(error);
+  }
+
+  try {
+    const privacyPolicyConfig = await PolicyConfigModel.findOne({
+      name: "shipping-and-return-policy",
+    });
+    if (!privacyPolicyConfig) {
+      await PolicyConfigModel.create({
+        name: "shipping-and-return-policy",
+        status: STATUS.ACTIVE,
+        description: "Shipping and Return Policy",
+      });
+      console.log("Shipping and Return Policy config created");
+      return;
+    }
+    console.log("Shipping and Return Policy already exists");
+  } catch (error) {
+    console.log("Shipping and Return Policy creation failed!");
+    console.log(error);
+  }
+};
+
 const init = async () => {
   await initUserRole();
   await initOwnerRole();
   await initMasterUser();
   await initHomeConfig();
+  await initPolicyConfig();
 };
 
 module.exports = {
