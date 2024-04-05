@@ -39,6 +39,12 @@ const userSchema = new mongoose.Schema(
         ref: "product",
       },
     ],
+    couponsUsed: [
+      {
+        type: mongoose.SchemaTypes.ObjectId,
+        ref: "coupon",
+      },
+    ],
     cart: [
       {
         variant: {

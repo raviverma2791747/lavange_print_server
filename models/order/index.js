@@ -9,6 +9,7 @@ const orderSchema = new mongoose.Schema(
         variant: { type: mongoose.SchemaTypes.ObjectId, default: null },
         variantSchema: { type: mongoose.SchemaTypes.ObjectId, default: null },
         price: { type: mongoose.SchemaTypes.Number },
+        compareAtPrice: { type: mongoose.SchemaTypes.Number },
         quantity: {
           type: mongoose.SchemaTypes.Number,
           min: 1,
@@ -110,6 +111,18 @@ const orderSchema = new mongoose.Schema(
         type: mongoose.SchemaTypes.String,
         default: "",
       },
+    },
+    coupon: {
+      type: mongoose.SchemaTypes.ObjectId,
+      ref: "coupon",
+    },
+    discount: {
+      type: mongoose.SchemaTypes.Number,
+      default: 0,
+    },
+    total: {
+      type: mongoose.SchemaTypes.Number,
+      default: 0,
     },
     transactionId: {
       type: mongoose.SchemaTypes.String,

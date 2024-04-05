@@ -99,9 +99,68 @@ const getUserCategory = async (req, res, next) => {
   }
 };
 
+const getUserCategorySlug = async (req, res, next) => {
+  try {
+    let category = await CategoryModel.findOne({ slug: req.params.slug })
+      .populate({
+        path: "products",
+        match: { status: "active" },
+        populate: {
+          path: "assets",
+          select: "_id url title",
+        },
+      })
+      .lean({
+        virtuals: true,
+      });
+
+    return res.json({
+      status: 200,
+      data: {
+        category,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const fetchUserCategory = async (req, res, next) => {
+  try {
+    const page = parseInt(req.query.page) - 1 || 0;
+    const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || "";
+
+    const categories = await CategoryModel.find({
+      name: {
+        $regex: search,
+        $options: "i",
+      },
+    })
+      .skip(page * limit)
+      .limit(limit)
+      .populate({
+        path: "asset",
+        select: "_id url title",
+      })
+      .lean({ virtuals: true });
+
+    return res.json({
+      status: 200,
+      data: {
+        categories,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   fetchCategory,
   getCategory,
   updateCategory,
   getUserCategory,
+  getUserCategorySlug,
+  fetchUserCategory
 };

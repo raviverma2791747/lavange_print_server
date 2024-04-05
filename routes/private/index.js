@@ -20,7 +20,13 @@ const {
   fetchProduct,
   updateProduct,
 } = require("../../controllers/product");
-const { updateImage, getImage, fetchImage, createImage, deleteImage } = require("../../controllers/image");
+const {
+  updateImage,
+  getImage,
+  fetchImage,
+  createImage,
+  deleteImage,
+} = require("../../controllers/image");
 const { fetchTag, getTag, updateTag } = require("../../controllers/tag");
 const {
   getAnnouncement,
@@ -60,6 +66,7 @@ const {
   getUserCart,
   addUserCart,
   removeUserCart,
+  deleteUserCart,
 } = require("../../controllers/cart");
 const {
   fetchUserAddress,
@@ -76,6 +83,11 @@ const {
   updateOrderStatus,
   updateOrderShipping,
 } = require("../../controllers/order");
+const {
+  getCoupon,
+  fetchCoupon,
+  updateCoupon,
+} = require("../../controllers/coupon");
 const { updateRole, getRole, fetchRole } = require("../../controllers/role");
 const { fetchRight } = require("../../controllers/right");
 const admin = require("../../middlewares/admin");
@@ -86,6 +98,8 @@ const {
   updateOrderStatusSchema,
   updateOrderShippingSchema,
 } = require("../../validators/order");
+const { getPolicyConfig, updatePolicyConfig } = require("../../controllers/policyconfig");
+const expressAsyncHandler = require("express-async-handler");
 
 dotenv.config();
 
@@ -110,7 +124,12 @@ if (process.env.NODE_ENV === "production") {
       cb(null, { fieldName: file.fieldname });
     },
     key: function (req, file, cb) {
-      cb(null, `image-${new mongoose.Types.ObjectId().toString()}${path.extname(file.originalname)}`);
+      cb(
+        null,
+        `image-${new mongoose.Types.ObjectId().toString()}${path.extname(
+          file.originalname
+        )}`
+      );
     },
   });
 } else {
@@ -119,7 +138,12 @@ if (process.env.NODE_ENV === "production") {
       cb(null, `${process.env.MEDIA_PATH}/`); // Specify the upload directory
     },
     filename: (req, file, cb) => {
-      cb(null, `image-${new mongoose.Types.ObjectId().toString()}${path.extname(file.originalname)}`); // Use original filename
+      cb(
+        null,
+        `image-${new mongoose.Types.ObjectId().toString()}${path.extname(
+          file.originalname
+        )}`
+      ); // Use original filename
     },
   });
 }
@@ -159,14 +183,20 @@ router.post(
   "/product",
   authenticate,
   admin,
- validate(productSchema),
+  validate(productSchema),
   updateProduct
 );
 
 //Image
-router.post("/image/upload", authenticate, admin, upload.single("img"), createImage);
-router.post("/image", authenticate, admin,updateImage);
-router.get("/image/:id", authenticate, admin,  getImage);
+router.post(
+  "/image/upload",
+  authenticate,
+  admin,
+  upload.single("img"),
+  createImage
+);
+router.post("/image", authenticate, admin, updateImage);
+router.get("/image/:id", authenticate, admin, getImage);
 router.get("/image", authenticate, admin, fetchImage);
 router.delete("/image/:id", authenticate, admin, deleteImage);
 
@@ -221,6 +251,17 @@ router.get("/user/order/:id", authenticate, getUserOrder);
 router.post("/user/order/create", authenticate, createUserOrder);
 router.post("/user/order", authenticate, updateUserOrder);
 
+//Coupons
+router.get("/coupon", authenticate, admin, fetchCoupon);
+router.get("/coupon/:id", authenticate, admin, getCoupon);
+router.post(
+  "/coupon",
+  authenticate,
+  admin,
+  // validate(couponSchema),
+  updateCoupon
+);
+
 //Wishlist
 router.get("/user/wishlist", authenticate, getUserWishlist);
 router.post("/user/wishlist/add", authenticate, addUserWishlist);
@@ -230,6 +271,7 @@ router.post("/user/wishlist/remove", authenticate, removeUserWishlist);
 router.get("/user/cart", authenticate, getUserCart);
 router.post("/user/cart/add", authenticate, addUserCart);
 router.post("/user/cart/remove", authenticate, removeUserCart);
+router.post("/user/cart/delete", authenticate, deleteUserCart);
 
 //Address
 router.get("/user/address", authenticate, fetchUserAddress);
@@ -262,6 +304,19 @@ router.get("/stats", authenticate, admin, getStats);
 router.get("/config/home", authenticate, getHomeConfig);
 //router.get("/config/home/:id", getHomeConfig);
 router.post("/config/home", authenticate, admin, updateHomeConfig);
+router.get(
+  "/config/policy/:name",
+  authenticate,
+  admin,
+  expressAsyncHandler(getPolicyConfig)
+);
+router.post(
+  "/config/policy",
+  authenticate,
+  admin,
+  expressAsyncHandler(updatePolicyConfig)
+);
+
 
 //User Routes
 
