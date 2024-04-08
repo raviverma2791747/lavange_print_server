@@ -14,7 +14,7 @@ const categorySchema = new mongoose.Schema(
       unique: true,
       index: true,
     },
-    slug : {
+    slug: {
       type: mongoose.SchemaTypes.String,
       required: true,
       unique: true,
@@ -25,6 +25,13 @@ const categorySchema = new mongoose.Schema(
       ref: "image",
       required: true,
     },
+    facets: [
+      {
+        type: mongoose.SchemaTypes.ObjectId,
+        ref: "facet",
+        // required: true,
+      },
+    ],
   },
   { timestamps: true }
 );

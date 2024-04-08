@@ -98,8 +98,12 @@ const {
   updateOrderStatusSchema,
   updateOrderShippingSchema,
 } = require("../../validators/order");
-const { getPolicyConfig, updatePolicyConfig } = require("../../controllers/policyconfig");
+const {
+  getPolicyConfig,
+  updatePolicyConfig,
+} = require("../../controllers/policyconfig");
 const expressAsyncHandler = require("express-async-handler");
+const { fetchFacet, getFacet, updateFacet } = require("../../controllers/facets");
 
 dotenv.config();
 
@@ -316,8 +320,9 @@ router.post(
   admin,
   expressAsyncHandler(updatePolicyConfig)
 );
-
-
+router.get("/facet", authenticate, admin, expressAsyncHandler(fetchFacet));
+router.get("/facet/:id", authenticate, admin, expressAsyncHandler(getFacet));
+router.post("/facet", authenticate, admin, expressAsyncHandler(updateFacet));
 //User Routes
 
 module.exports = router;

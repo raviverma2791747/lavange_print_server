@@ -178,6 +178,37 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// productSchema.post("find", function (docs) {
+//   docs.forEach((doc) => {
+//     const v = doc.variantConfigs.find((config) => config.status === "active");
+//     if (v) {
+//       doc.price = v.variants.reduce((min, variant) => {
+//         return variant.price <= min ? variant.price : min;
+//       }, Infinity);
+//     }
+//   });
+// });
+
+productSchema.virtual("maxPrice").get(function () {
+  const v = this.variantConfigs.find((config) => config.status === "active");
+  if (v) {
+    return v.variants.reduce((max, variant) => {
+      return variant.price >= max ? variant.price : max;
+    }, 0);
+  }
+  return this.price;
+});
+
+productSchema.virtual("minPrice").get(function () {
+  const v = this.variantConfigs.find((config) => config.status === "active");
+  if (v) {
+    return v.variants.reduce((min, variant) => {
+      return variant.price <= min ? variant.price : min;
+    }, Infinity);
+  }
+  return this.price;
+});
+
 productSchema.virtual("variants").get(function () {
   const v = this.variantConfigs.find((config) => config.status === "active");
   if (v) {
