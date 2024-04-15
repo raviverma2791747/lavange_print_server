@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const mongooseLeanVirtuals = require("mongoose-lean-virtuals");
+const { STATUS } = require("../../helper/constants");
 
 const announcementSchema = new mongoose.Schema(
   {
@@ -17,9 +18,9 @@ const announcementSchema = new mongoose.Schema(
       required: true,
     },
     status: {
-      type: mongoose.SchemaTypes.String,
-      enum: ["active", "draft", "archive"],
-      default: "draft",
+      type: mongoose.SchemaTypes.Number,
+      enum: Object.values(STATUS),
+      default:  STATUS.DRAFT,
       required: true,
     },
   },

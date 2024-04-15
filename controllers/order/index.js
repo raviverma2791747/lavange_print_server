@@ -9,18 +9,9 @@ const { assetUrl } = require("../../helper/utils");
 const { getCartPopulated } = require("../../helper/cart");
 const { validateCoupon } = require("../../helper/coupon");
 const CouponModel = require("../../models/coupon");
+const { ORDER_STATUS } = require("../../helper/constants");
 
 dotenv.config();
-
-const ORDER_STATUS = {
-  pending: "pending",
-  placed: "placed",
-  prepared: "prepared",
-  dispatched: "dispatched",
-  cancelled: "cancelled",
-  delivered: "delivered",
-  returned: "returned",
-};
 
 const ORDER_MESSAGE = {
   //write message for each status

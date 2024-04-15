@@ -30,7 +30,11 @@ mongoose.connect(process.env.MONGO_URI);
 if (app.get("env") == "production") {
   app.use(
     cors({
-      origin: ["https://print.lavange.in", "https://admin-print.lavange.in","https://ecommerce-one-drab-95.vercel.app"],
+      origin: [
+        "https://print.lavange.in",
+        "https://admin-print.lavange.in",
+        "https://ecommerce-one-drab-95.vercel.app",
+      ],
     })
   );
 } else {
@@ -57,6 +61,16 @@ if (app.get("env") == "production") {
 // app.use(
 //   morgan(":method :url :status :res[content-length] - :response-time ms")
 // );
+
+//For testing purpose adds latency of 5s
+const sleep = (ms) =>
+  new Promise((resolve) =>
+    setTimeout(resolve, Math.floor(Math.random() * ms + 100))
+  );
+app.use(async (req, res, next) => {
+  await sleep(2000);
+  next();
+});
 
 app.get("/print", async (req, res, next) => {
   return res.json({ status: 200 });

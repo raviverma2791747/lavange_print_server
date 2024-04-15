@@ -1,11 +1,12 @@
 const CategoryModel = require("../../models/category");
 const CollectionModel = require("../../models/collection");
 const FacetModel = require("../../models/facet");
+const { STATUS } = require("../../helper/constants");
 
 const getSearchFilters = async (req, res, next) => {
   try {
-    const categories = await CategoryModel.find({ status: "active" });
-    const collections = await CollectionModel.find({ status: "active" });
+    const categories = await CategoryModel.find({ status: STATUS.ACTIVE });
+    const collections = await CollectionModel.find({ status: STATUS.ACTIVE });
     const facets = await FacetModel.find();
 
     return res.json({

@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const mongooseLeanVirtuals = require("mongoose-lean-virtuals");
+const { STATUS } = require("../../helper/constants");
 
 const configSchema = new mongoose.Schema(
   {
@@ -10,9 +11,9 @@ const configSchema = new mongoose.Schema(
       index: true,
     },
     status: {
-      type: mongoose.SchemaTypes.String,
-      enum: ["draft", "active", "archive"],
-      default: "draft",
+      type: mongoose.SchemaTypes.Number,
+      enum: Object.values(STATUS),
+      default: STATUS.DRAFT,
       required: true,
     },
   },

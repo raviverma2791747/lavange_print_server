@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const ProductModel = require("../../models/product");
 const { assetUrl } = require("../../helper/utils");
+const { STATUS } = require("../../helper/constants");
 
 const fetchProduct = async (req, res, next) => {
   try {
@@ -95,7 +96,7 @@ const updateProduct = async (req, res, next) => {
 };
 
 const fetchUserProduct = async (req, res, next) => {
-  const filter = { status: "active" };
+  const filter = { status: STATUS.ACTIVE };
 
   filter["title"] = {
     $regex: req.query.search ?? "",
@@ -233,7 +234,7 @@ const fetchUserProduct = async (req, res, next) => {
   //             input: "$variantConfigs",
   //             as: "variantConfig",
   //             cond: {
-  //               $eq: ["$$variantConfig.status", "active"],
+  //               $eq: ["$$variantConfig.status", STATUS.ACTIVE],
   //             },
   //           },
   //         },
@@ -258,7 +259,7 @@ const fetchUserProduct = async (req, res, next) => {
   //                     input: "$$variantSchema.options",
   //                     as: "option",
   //                     cond: {
-  //                       $eq: ["$$option.status", "active"],
+  //                       $eq: ["$$option.status", STATUS.ACTIVE],
   //                     },
   //                   },
   //                 },
@@ -307,7 +308,7 @@ const getUserProduct = async (req, res, next) => {
     //     $match: {
     //       //_id: new mongoose.Types.ObjectId(req.params.id),
     //       slug: req.params.slug,
-    //       status: "active",
+    //       status: STATUS.ACTIVE,
     //     },
     //   },
     //   {
@@ -334,7 +335,7 @@ const getUserProduct = async (req, res, next) => {
     //             input: "$variantConfigs",
     //             as: "variantConfig",
     //             cond: {
-    //               $eq: ["$$variantConfig.status", "active"],
+    //               $eq: ["$$variantConfig.status", STATUS.ACTIVE],
     //             },
     //           },
     //         },
@@ -359,7 +360,7 @@ const getUserProduct = async (req, res, next) => {
     //                     input: "$$variantSchema.options",
     //                     as: "option",
     //                     cond: {
-    //                       $eq: ["$$option.status", "active"],
+    //                       $eq: ["$$option.status", STATUS.ACTIVE],
     //                     },
     //                   },
     //                 },
@@ -404,7 +405,7 @@ const getUserProduct = async (req, res, next) => {
 
     let product = await ProductModel.findOne({
       slug: req.params.slug,
-      status: "active",
+      status: STATUS.ACTIVE,
     })
       .populate("category")
       .populate({

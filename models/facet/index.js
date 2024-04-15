@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { FACET_TYPE } = require("../../helper/constants");
 
 const facetSchema = new mongoose.Schema(
   {
@@ -11,9 +12,9 @@ const facetSchema = new mongoose.Schema(
       required: true,
     },
     type: {
-      type: mongoose.SchemaTypes.String,
-      enum: ["color", "size", "material", "other"],
-      default: "other",
+      type: mongoose.SchemaTypes.Number,
+      enum: Object.values(FACET_TYPE),
+      default: FACET_TYPE.OTHER,
       required: true,
     },
     options: [

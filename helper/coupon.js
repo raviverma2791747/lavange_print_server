@@ -39,7 +39,7 @@ const validateCoupon = async (code, cart, userID) => {
     };
   }
 
-  if (coupon.status !== "active") {
+  if (coupon.status !== STATUS.ACTIVE) {
     return {
       status: 400,
       data: {

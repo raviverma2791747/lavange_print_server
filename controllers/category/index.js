@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const CategoryModel = require("../../models/category");
-const { assetUrl } = require("../../helper/utils");
+const { STATUS } = require("../../helper/constants");
 
 const fetchCategory = async (req, res, next) => {
   try {
@@ -82,7 +82,7 @@ const getUserCategory = async (req, res, next) => {
           path: "assets",
           select: "_id url title",
         },
-        match: { status: "active" },
+        match: { status: STATUS.ACTIVE },
       })
       .lean({
         virtuals: true,
@@ -104,7 +104,7 @@ const getUserCategorySlug = async (req, res, next) => {
     let category = await CategoryModel.findOne({ slug: req.params.slug })
       .populate({
         path: "products",
-        match: { status: "active" },
+        match: { status: STATUS.ACTIVE },
         populate: {
           path: "assets",
           select: "_id url title",
@@ -162,5 +162,5 @@ module.exports = {
   updateCategory,
   getUserCategory,
   getUserCategorySlug,
-  fetchUserCategory
+  fetchUserCategory,
 };

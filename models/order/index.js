@@ -1,5 +1,13 @@
 const { min, update } = require("lodash");
 const mongoose = require("mongoose");
+const {
+  ORDER_STATUS,
+  ADDRESS_TYPE,
+  SHIPPING_VENDOR,
+  PAYMENT_STATUS,
+  PAYMENT_MODE,
+  PAYMENT_GATEWAY,
+} = require("../../helper/constants");
 
 const orderSchema = new mongoose.Schema(
   {
@@ -49,37 +57,22 @@ const orderSchema = new mongoose.Schema(
         type: mongoose.SchemaTypes.Number,
       },
       type: {
-        type: mongoose.SchemaTypes.String,
-        enum: ["home", "work", "other"],
+        type: mongoose.SchemaTypes.Number,
+        enum: Object.values(ADDRESS_TYPE),
+        default: ADDRESS_TYPE.HOME,
       },
     },
     status: {
-      type: mongoose.SchemaTypes.String,
-      enum: [
-        "pending",
-        "placed",
-        "prepared",
-        "dispatched",
-        "cancelled",
-        "delivered",
-        "returned",
-      ],
-      default: "pending",
+      type: mongoose.SchemaTypes.Number,
+      enum: Object.values(ORDER_STATUS),
+      default: ORDER_STATUS.PENDING,
     },
     timeline: [
       {
         updatedAt: { type: mongoose.SchemaTypes.Date, default: Date.now },
         status: {
-          type: mongoose.SchemaTypes.String,
-          enum: [
-            "pending",
-            "placed",
-            "prepared",
-            "dispatched",
-            "cancelled",
-            "delivered",
-            "returned",
-          ],
+          type: mongoose.SchemaTypes.Number,
+          enum: Object.values(ORDER_STATUS),
         },
         message: {
           type: mongoose.SchemaTypes.String,
@@ -88,16 +81,9 @@ const orderSchema = new mongoose.Schema(
     ],
     shipping: {
       vendor: {
-        type: mongoose.SchemaTypes.String,
-        enum: [
-          "shiprocket",
-          "delhivery",
-          "amazon",
-          "flipkart",
-          "myntra",
-          "none",
-        ],
-        default: "none",
+        type: mongoose.SchemaTypes.Number,
+        enum: Object.values(SHIPPING_VENDOR),
+        default: SHIPPING_VENDOR.NONE,
       },
       trackingUrl: {
         type: mongoose.SchemaTypes.String,
@@ -129,19 +115,19 @@ const orderSchema = new mongoose.Schema(
       default: "",
     },
     paymentStatus: {
-      type: mongoose.SchemaTypes.String,
-      enum: ["pending", "success", "failed", "refunded"],
-      default: "pending",
+      type: mongoose.SchemaTypes.Number,
+      enum: Object.values(PAYMENT_STATUS),
+      default: PAYMENT_STATUS.PENDING,
     },
-    paymentType: {
-      type: mongoose.SchemaTypes.String,
-      enum: ["cod", "online"],
-      default: "online",
+    paymentMode: {
+      type: mongoose.SchemaTypes.Number,
+      enum: Object.values(PAYMENT_MODE),
+      default: PAYMENT_MODE.ONLINE,
     },
     paymentGateway: {
-      type: mongoose.SchemaTypes.String,
-      enum: ["paytm", "phonepe", "razorpay", "none"],
-      default: "none",
+      type: mongoose.SchemaTypes.Number,
+      enum: Object.values(PAYMENT_GATEWAY),
+      default: PAYMENT_GATEWAY.NONE,
     },
   },
   { timestamps: true }

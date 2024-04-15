@@ -67,7 +67,7 @@ const initMasterUser = async () => {
         email,
         password: hashedPassword,
         role: ownerRole._id,
-        status: "active",
+        status: STATUS.ACTIVE,
       });
       await user.save();
       console.log("Master user created");

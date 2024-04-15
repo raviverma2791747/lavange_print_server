@@ -1,30 +1,30 @@
+const {
+  ORDER_STATUS,
+  PAYMENT_STATUS,
+  PAYMENT_MODE,
+  PAYMENT_GATEWAY,
+  SHIPPING_VENDOR,
+} = require("../../helper/constants");
+
 const updateOrderStatusSchema = {
   type: "object",
   properties: {
     _id: { type: "string" },
     status: {
-      type: "string",
-      enum: [
-        "pending",
-        "placed",
-        "prepared",
-        "dispatched",
-        "cancelled",
-        "delivered",
-        "returned",
-      ],
+      type: "number",
+      enum: Object.values(ORDER_STATUS),
     },
     paymentStatus: {
-      type: "string",
-      enum: ["pending", "success", "failed", "refunded"],
+      type: "number",
+      enum: Object.values(PAYMENT_STATUS),
     },
-    paymentType: {
-      type: "string",
-      enum: ["cod", "online"],
+    paymentMode: {
+      type: "number",
+      enum: Object.values(PAYMENT_MODE),
     },
     paymentGateway: {
-      type: "string",
-      enum: ["paytm", "phonepe", "razorpay", "none"],
+      type: "number",
+      enum: Object.values(PAYMENT_GATEWAY),
     },
   },
   required: ["_id"],
@@ -39,16 +39,9 @@ const updateOrderShippingSchema = {
       type: "object",
       properties: {
         vendor: {
-          type: "string",
-          enum: [
-            "shiprocket",
-            "delhivery",
-            "amazon",
-            "flipkart",
-            "myntra",
-            "none",
-          ],
-          default: "none",
+          type: "number",
+          enum: Object.values(SHIPPING_VENDOR),
+          default: SHIPPING_VENDOR.NONE,
         },
         trackingUrl: {
           type: "string",

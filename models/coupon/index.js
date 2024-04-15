@@ -1,12 +1,13 @@
 const mongoose = require("mongoose");
 const mongooseLeanVirtuals = require("mongoose-lean-virtuals");
+const { STATUS, NUMBER_TYPE } = require("../../helper/constants");
 
 const couponSchema = new mongoose.Schema(
   {
     status: {
-      type: mongoose.SchemaTypes.String,
-      enum: ["active", "draft", "archive"],
-      default: "active",
+      type: mongoose.SchemaTypes.Number,
+      enum: Object.values(STATUS),
+      default: STATUS.DRAFT,
       required: true,
     },
     name: {
@@ -26,9 +27,9 @@ const couponSchema = new mongoose.Schema(
         required: true,
       },
       type: {
-        type: mongoose.SchemaTypes.String,
-        enum: ["fixed", "percentage"],
-        default: "fixed",
+        type: mongoose.SchemaTypes.Number,
+        enum: Object.values(NUMBER_TYPE),
+        default: NUMBER_TYPE.ABSOLUTE,
         required: true,
       },
     },

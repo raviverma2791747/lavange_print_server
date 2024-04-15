@@ -1,11 +1,13 @@
 const mongoose = require("mongoose");
+const mongooseLeanVirtuals = require("mongoose-lean-virtuals");
+const { STATUS } = require("../../helper/constants");
 
 const categorySchema = new mongoose.Schema(
   {
     status: {
-      type: mongoose.SchemaTypes.String,
-      enum: ["draft", "active", "archive"],
-      default: "draft",
+      type: mongoose.SchemaTypes.Number,
+      enum: Object.values(STATUS),
+      default: STATUS.DRAFT,
       required: true,
     },
     name: {
@@ -51,6 +53,7 @@ categorySchema.set("toObject", {
   virtuals: true,
 });
 
+categorySchema.plugin(mongooseLeanVirtuals);
 const CategoryModel = mongoose.model("category", categorySchema);
 
 module.exports = CategoryModel;
