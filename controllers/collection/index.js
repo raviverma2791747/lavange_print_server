@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const CollectionModel = require("../../models/collection");
 const dotenv = require("dotenv");
 const { assetUrl } = require("../../helper/utils");
+const { STATUS } = require("../../helper/constants");
 
 dotenv.config();
 
@@ -32,7 +33,7 @@ const getCollection = async (req, res, next) => {
     let collection = await CollectionModel.findById({ _id: req.params.id })
       .populate({
         path: "products",
-        match: { status: "active" },
+        match: { status: STATUS.ACTIVE },
         populate: {
           path: "assets",
           select: "_id url title",
@@ -82,7 +83,7 @@ const getUserCollectionSlug = async (req, res, next) => {
     let collection = await CollectionModel.findOne({ slug: req.params.slug })
       .populate({
         path: "products",
-        match: { status: "active" },
+        match: { status: STATUS.ACTIVE },
         populate: {
           path: "assets",
           select: "_id url title",
@@ -112,7 +113,7 @@ const getUserCollection = async (req, res, next) => {
           path: "assets",
           select: "_id url title",
         },
-        match: { status: "active" },
+        match: { status: STATUS.ACTIVE },
       })
       .lean({
         virtuals: true,
@@ -132,7 +133,7 @@ const getUserCollection = async (req, res, next) => {
 const fetchUserCollection = async (req, res, next) => {
   try {
     const collections = await CollectionModel.find({
-      status: "active",
+      status: STATUS.ACTIVE,
     })
       .populate({
         path: "asset",

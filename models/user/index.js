@@ -1,11 +1,12 @@
 const mongoose = require("mongoose");
+const { STATUS, USER_STATUS, ADDRESS_TYPE } = require("../../helper/constants");
 
 const userSchema = new mongoose.Schema(
   {
     status: {
-      type: mongoose.SchemaTypes.String,
-      enum: ["active", "inactive", "archive"],
-      default: "inactive",
+      type: mongoose.SchemaTypes.Number,
+      enum: Object.values(USER_STATUS),
+      default: USER_STATUS.INACTIVE,
     },
     username: {
       type: mongoose.SchemaTypes.String,
@@ -71,9 +72,9 @@ const userSchema = new mongoose.Schema(
     addresses: [
       {
         status: {
-          type: mongoose.SchemaTypes.String,
-          enum: ["active", "archive"],
-          default: "active",
+          type: mongoose.SchemaTypes.Number,
+          enum: Object.values(STATUS),
+          default: STATUS.ACTIVE,
         },
         default: {
           type: mongoose.SchemaTypes.Boolean,
@@ -107,8 +108,9 @@ const userSchema = new mongoose.Schema(
           type: mongoose.SchemaTypes.Number,
         },
         type: {
-          type: mongoose.SchemaTypes.String,
-          enum: ["home", "work", "other"],
+          type: mongoose.SchemaTypes.Number,
+          enum: Object.values(ADDRESS_TYPE),
+          default: ADDRESS_TYPE.HOME,
         },
       },
     ],

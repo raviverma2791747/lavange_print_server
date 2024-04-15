@@ -67,7 +67,7 @@ const initMasterUser = async () => {
         email,
         password: hashedPassword,
         role: ownerRole._id,
-        status: "active",
+        status: STATUS.ACTIVE,
       });
       await user.save();
       console.log("Master user created");
@@ -111,9 +111,9 @@ const initPolicyConfig = async () => {
         description: "Privacy Policy",
       });
       console.log("Privacy Policy config created");
-      return;
+    } else {
+      console.log("Privacy Policy already exists");
     }
-    console.log("Privacy Policy already exists");
   } catch (error) {
     console.log("Privacy Policy creation failed!");
     console.log(error);
@@ -130,9 +130,9 @@ const initPolicyConfig = async () => {
         description: "Terms and Conditions",
       });
       console.log("Terms and Conditions Policy config created");
-      return;
+    } else {
+      console.log("Terms and Conditions Policy already exists");
     }
-    console.log("Terms and Conditions Policy already exists");
   } catch (error) {
     console.log("Terms and Conditions Policy creation failed!");
     console.log(error);
@@ -149,9 +149,9 @@ const initPolicyConfig = async () => {
         description: "Shipping and Return Policy",
       });
       console.log("Shipping and Return Policy config created");
-      return;
+    } else {
+      console.log("Shipping and Return Policy already exists");
     }
-    console.log("Shipping and Return Policy already exists");
   } catch (error) {
     console.log("Shipping and Return Policy creation failed!");
     console.log(error);

@@ -1,11 +1,13 @@
 const mongoose = require("mongoose");
+const mongooseLeanVirtuals = require("mongoose-lean-virtuals");
+const { STATUS } = require("../../helper/constants");
 
 const categorySchema = new mongoose.Schema(
   {
     status: {
-      type: mongoose.SchemaTypes.String,
-      enum: ["draft", "active", "archive"],
-      default: "draft",
+      type: mongoose.SchemaTypes.Number,
+      enum: Object.values(STATUS),
+      default: STATUS.DRAFT,
       required: true,
     },
     name: {
@@ -14,7 +16,7 @@ const categorySchema = new mongoose.Schema(
       unique: true,
       index: true,
     },
-    slug : {
+    slug: {
       type: mongoose.SchemaTypes.String,
       required: true,
       unique: true,
@@ -25,6 +27,13 @@ const categorySchema = new mongoose.Schema(
       ref: "image",
       required: true,
     },
+    facets: [
+      {
+        type: mongoose.SchemaTypes.ObjectId,
+        ref: "facet",
+        // required: true,
+      },
+    ],
   },
   { timestamps: true }
 );
@@ -44,6 +53,7 @@ categorySchema.set("toObject", {
   virtuals: true,
 });
 
+categorySchema.plugin(mongooseLeanVirtuals);
 const CategoryModel = mongoose.model("category", categorySchema);
 
 module.exports = CategoryModel;

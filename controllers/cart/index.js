@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 const UserModel = require("../../models/user");
-const { assetUrl } = require("../../helper/utils");
 
 const getUserCart = async (req, res, next) => {
   try {

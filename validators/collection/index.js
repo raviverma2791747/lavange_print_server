@@ -1,3 +1,5 @@
+const { STATUS } = require("../../helper/constants");
+
 const schema = {
   type: "object",
   properties: {
@@ -5,7 +7,7 @@ const schema = {
     name: { type: "string" },
     description: { type: "string" },
     asset: { type: "string" },
-    status: { type: "string", enum: ["active", "draft", "archive"] },
+    status: { type: "number", enum: Object.values(STATUS) },
     slug: { type: "string" },
   },
   required: ["name", "description", "asset", "status", "slug"],

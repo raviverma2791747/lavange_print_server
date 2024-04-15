@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const ProductModel = require("../../models/product");
 const { assetUrl } = require("../../helper/utils");
+const { STATUS } = require("../../helper/constants");
 
 const fetchProduct = async (req, res, next) => {
   try {
@@ -95,148 +96,209 @@ const updateProduct = async (req, res, next) => {
 };
 
 const fetchUserProduct = async (req, res, next) => {
-  try {
-    const match_stage = {
-      $match: {
-        title: {
-          $regex: req.query.search ?? "",
-          $options: "i",
-        },
-      },
+  const filter = { status: STATUS.ACTIVE };
+
+  filter["title"] = {
+    $regex: req.query.search ?? "",
+    $options: "i",
+  };
+
+  if (req.query.categories) {
+    filter["category"] = {
+      $in: req.query.categories
+        .split(",")
+        .map((id) => new mongoose.Types.ObjectId(id)),
     };
-
-    if (req.query.categories) {
-      match_stage["$match"]["category.name"] = {
-        $in: req.query.categories.split(","),
-      };
-    }
-
-    if (req.query.collections) {
-      match_stage["$match"]["collections"] = {
-        $in: req.query.collections
-          .split(",")
-          .map((id) => new mongoose.Types.ObjectId(id)),
-      };
-    }
-
-    let sort_stage;
-
-    if (req.query.sort) {
-      sort_stage = {
-        $sort: {
-          [req.query.sort]: req.query.order === "desc" ? -1 : 1,
-        },
-      };
-    } else {
-      sort_stage = {
-        $sort: {
-          createdAt: -1,
-        },
-      };
-    }
-
-    const products = await ProductModel.aggregate([
-      {
-        $lookup: {
-          from: "categories",
-          localField: "category",
-          foreignField: "_id",
-          as: "category",
-        },
-      },
-      match_stage,
-      {
-        $addFields: {
-          assets: {
-            $map: {
-              input: "$assets",
-              as: "asset",
-              in: {
-                $mergeObjects: [
-                  "$$asset",
-                  {
-                    url: {
-                      $concat: [assetUrl(""), "$$asset.id"],
-                    },
-                  },
-                ],
-              },
-            },
-          },
-          variantConfig: {
-            $first: {
-              $filter: {
-                input: "$variantConfigs",
-                as: "variantConfig",
-                cond: {
-                  $eq: ["$$variantConfig.status", "active"],
-                },
-              },
-            },
-          },
-        },
-      },
-      {
-        $addFields: {
-          variants: { $ifNull: ["$variantConfig.variants", null] },
-          variantOptions: {
-            $ifNull: [
-              {
-                $map: {
-                  input: "$variantConfig.variantSchema",
-                  as: "variantSchema",
-                  in: {
-                    displayName: "$$variantSchema.displayName",
-                    name: "$$variantSchema.name",
-                    type: "$$variantSchema.type",
-                    options: {
-                      $filter: {
-                        input: "$$variantSchema.options",
-                        as: "option",
-                        cond: {
-                          $eq: ["$$option.status", "active"],
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-              null,
-            ],
-          },
-          schemaId: { $ifNull: ["$variantConfig._id", null] },
-        },
-      },
-      // {
-      //   $set : {
-      //     price : {
-
-      //     }
-      //   }
-      // },
-      {
-        $project: {
-          variantConfigs: 0,
-          shippingWeight: 0,
-          isDigitalProduct: 0,
-          hasSKU: 0,
-          barcode: 0,
-          tags: 0,
-          variantConfig: 0,
-        },
-      },
-      sort_stage,
-    ]);
-
-    return res.json({
-      status: 200,
-      data: {
-        products: products,
-      },
-    });
-  } catch (error) {
-    next(error);
   }
+
+  if (req.query.collections) {
+    filter["collections"] = {
+      $in: req.query.collections
+        .split(",")
+        .map((id) => new mongoose.Types.ObjectId(id)),
+    };
+  }
+
+  // if (req.query.tags) {
+  //   filter["tags"] = {
+  //     $in: req.query.tags
+  //       .split(",")
+  //       .map((id) => new mongoose.Types.ObjectId(id)),
+  //   };
+  // }
+
+  // if (req.query.sort && req.query.order) {
+  //   filter[req.query.sort] = req.query.order === "desc" ? -1 : 1;
+  // } else {
+  //   filter["createdAt"] = -1;
+  // }
+
+  let sort = {};
+
+  if (req.query.sort) {
+    if (req.query.sort === "price") {
+      console.log("price");
+      sort["minPrice"] = req.query.order === "desc" ? -1 : 1;
+    } else {
+      sort[req.query.sort] = req.query.order === "desc" ? -1 : 1;
+    }
+  }
+
+  const products = await ProductModel.find(filter)
+    .populate("category")
+    .populate({
+      path: "assets",
+      select: "_id url title",
+    })
+    .select(
+      "-shippingWeight -isDigitalProduct -hasSKU -barcode -tags -trackQuantity -inventoryQuantity"
+    )
+    .sort(sort)
+    .lean({ virtuals: true });
+
+  products.forEach((product) => {
+    delete product.variantConfigs;
+  });
+
+  //delete product.variantConfigs;
+  // const match_stage = {
+  //   $match: {
+  //     title: {
+  //       $regex: req.query.search ?? "",
+  //       $options: "i",
+  //     },
+  //   },
+  // };
+
+  // if (req.query.categories) {
+  //   match_stage["$match"]["category.name"] = {
+  //     $in: req.query.categories.split(","),
+  //   };
+  // }
+
+  // if (req.query.collections) {
+  //   match_stage["$match"]["collections"] = {
+  //     $in: req.query.collections
+  //       .split(",")
+  //       .map((id) => new mongoose.Types.ObjectId(id)),
+  //   };
+  // }
+
+  // let sort_stage;
+
+  // if (req.query.sort) {
+  //   sort_stage = {
+  //     $sort: {
+  //       [req.query.sort]: req.query.order === "desc" ? -1 : 1,
+  //     },
+  //   };
+  // } else {
+  //   sort_stage = {
+  //     $sort: {
+  //       createdAt: -1,
+  //     },
+  //   };
+  // }
+
+  // const products = await ProductModel.aggregate([
+  //   {
+  //     $lookup: {
+  //       from: "categories",
+  //       localField: "category",
+  //       foreignField: "_id",
+  //       as: "category",
+  //     },
+  //   },
+  //   match_stage,
+  //   {
+  //     $addFields: {
+  //       assets: {
+  //         $map: {
+  //           input: "$assets",
+  //           as: "asset",
+  //           in: {
+  //             $mergeObjects: [
+  //               "$$asset",
+  //               {
+  //                 url: {
+  //                   $concat: [assetUrl(""), "$$asset.id"],
+  //                 },
+  //               },
+  //             ],
+  //           },
+  //         },
+  //       },
+  //       variantConfig: {
+  //         $first: {
+  //           $filter: {
+  //             input: "$variantConfigs",
+  //             as: "variantConfig",
+  //             cond: {
+  //               $eq: ["$$variantConfig.status", STATUS.ACTIVE],
+  //             },
+  //           },
+  //         },
+  //       },
+  //     },
+  //   },
+  //   {
+  //     $addFields: {
+  //       variants: { $ifNull: ["$variantConfig.variants", null] },
+  //       variantOptions: {
+  //         $ifNull: [
+  //           {
+  //             $map: {
+  //               input: "$variantConfig.variantSchema",
+  //               as: "variantSchema",
+  //               in: {
+  //                 displayName: "$$variantSchema.displayName",
+  //                 name: "$$variantSchema.name",
+  //                 type: "$$variantSchema.type",
+  //                 options: {
+  //                   $filter: {
+  //                     input: "$$variantSchema.options",
+  //                     as: "option",
+  //                     cond: {
+  //                       $eq: ["$$option.status", STATUS.ACTIVE],
+  //                     },
+  //                   },
+  //                 },
+  //               },
+  //             },
+  //           },
+  //           null,
+  //         ],
+  //       },
+  //       schemaId: { $ifNull: ["$variantConfig._id", null] },
+  //     },
+  //   },
+  // {
+  //   $set : {
+  //     price : {
+
+  //     }
+  //   }
+  // },
+  //   {
+  //     $project: {
+  //       variantConfigs: 0,
+  //       shippingWeight: 0,
+  //       isDigitalProduct: 0,
+  //       hasSKU: 0,
+  //       barcode: 0,
+  //       tags: 0,
+  //       variantConfig: 0,
+  //     },
+  //   },
+  //   sort_stage,
+  // ]);
+
+  return res.json({
+    status: 200,
+    data: {
+      products: products,
+    },
+  });
 };
 
 const getUserProduct = async (req, res, next) => {
@@ -246,7 +308,7 @@ const getUserProduct = async (req, res, next) => {
     //     $match: {
     //       //_id: new mongoose.Types.ObjectId(req.params.id),
     //       slug: req.params.slug,
-    //       status: "active",
+    //       status: STATUS.ACTIVE,
     //     },
     //   },
     //   {
@@ -273,7 +335,7 @@ const getUserProduct = async (req, res, next) => {
     //             input: "$variantConfigs",
     //             as: "variantConfig",
     //             cond: {
-    //               $eq: ["$$variantConfig.status", "active"],
+    //               $eq: ["$$variantConfig.status", STATUS.ACTIVE],
     //             },
     //           },
     //         },
@@ -298,7 +360,7 @@ const getUserProduct = async (req, res, next) => {
     //                     input: "$$variantSchema.options",
     //                     as: "option",
     //                     cond: {
-    //                       $eq: ["$$option.status", "active"],
+    //                       $eq: ["$$option.status", STATUS.ACTIVE],
     //                     },
     //                   },
     //                 },
@@ -343,7 +405,7 @@ const getUserProduct = async (req, res, next) => {
 
     let product = await ProductModel.findOne({
       slug: req.params.slug,
-      status: "active",
+      status: STATUS.ACTIVE,
     })
       .populate("category")
       .populate({

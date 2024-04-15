@@ -1,42 +1,54 @@
 const OrderModel = require("../../models/order");
 const UserModel = require("../../models/user");
+const { STATUS } = require("../../helper/constants");
 
 const getStats = async (req, res, next) => {
-  try {
-    const users = await UserModel.aggregate([
-      {
-        $match: {
-          createdAt: {
-            $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-            $lt: new Date(
-              new Date().getFullYear(),
-              new Date().getMonth() + 1,
-              1
-            ),
-          },
+  const users = await UserModel.aggregate([
+    {
+      $match: {
+        createdAt: {
+          $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+          $lt: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1),
         },
       },
-      {
-        $count: "count",
+    },
+    {
+      $count: "count",
+    },
+  ]);
+
+  const orders = await OrderModel.find({
+    createdAt: {
+      $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+      $lt: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1),
+    },
+  }).count();
+
+  const revenue = await OrderModel.aggregate([
+    {
+      $match: {
+        createdAt: {
+          $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+          $lt: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1),
+        },
       },
-    ]);
-
-    const orders = await OrderModel.find({
-      createdAt: {
-        $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-        $lt: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1),
+    },
+    {
+      $group: {
+        _id: null,
+        total: { $sum: "$total" },
       },
-    }).count();
+    },
+  ]);
 
-    console.log(users);
-
-    return res.json({
-      status: 200,
-      data: { users: users.length ? users[0].count : 0, orders },
-    });
-  } catch (error) {
-    next(error);
-  }
+  return res.json({
+    status: 200,
+    data: {
+      users: users.length ? users[0].count : 0,
+      orders,
+      revenue: revenue.length ? revenue[0].total : 0,
+    },
+  });
 };
 
 module.exports = { getStats };

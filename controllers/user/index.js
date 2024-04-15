@@ -5,8 +5,9 @@ const bcrypt = require("bcrypt");
 const { OAuth2Client } = require("google-auth-library");
 const RightType = require("../../models/right");
 const RoleModel = require("../../models/role");
+const { STATUS, USER_STATUS } = require("../../helper/constants");
 
-const fetchUser = async (req,  res, next) => {
+const fetchUser = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) - 1 || 0;
     const limit = parseInt(req.query.limit) || 10;
@@ -54,7 +55,7 @@ const fetchUser = async (req,  res, next) => {
   }
 };
 
-const getUser = async (req,  res, next) => {
+const getUser = async (req, res, next) => {
   try {
     let user = await UserModel.findById({ _id: req.params.id })
       .populate({
@@ -81,7 +82,7 @@ const getUser = async (req,  res, next) => {
   }
 };
 
-const getUse = async (req,  res, next) => {
+const getUse = async (req, res, next) => {
   try {
     let User = await UserModel.findById({ _id: req.params.id }).lean();
 
@@ -103,7 +104,7 @@ const getUse = async (req,  res, next) => {
   }
 };
 
-const updateUser = async (req,  res, next) => {
+const updateUser = async (req, res, next) => {
   try {
     const _id = req.body._id ?? new mongoose.Types.ObjectId();
 
@@ -131,7 +132,7 @@ const updateUser = async (req,  res, next) => {
 };
 
 //Public
-const getUserPublic = async (req,  res, next) => {
+const getUserPublic = async (req, res, next) => {
   try {
     const user = await UserModel.aggregate([
       {
@@ -157,7 +158,7 @@ const getUserPublic = async (req,  res, next) => {
     // });
 
     // const variantConfig = User.variantConfigs.find((variantConfig) => {
-    //   return variantConfig.status === "active";
+    //   return variantConfig.status === STATUS.ACTIVE;
     // });
 
     // if (variantConfig !== undefined) {
@@ -179,7 +180,7 @@ const getUserPublic = async (req,  res, next) => {
   }
 };
 
-const userExist = async (req,  res, next) => {
+const userExist = async (req, res, next) => {
   try {
     const user = await UserModel.findOne({ username: req.body.username });
     if (user) {
@@ -192,10 +193,10 @@ const userExist = async (req,  res, next) => {
   }
 };
 
-const userLogin = async (req,  res, next) => {
+const userLogin = async (req, res, next) => {
   try {
     const { username, password } = req.body;
-    const user = await UserModel.findOne({ username });
+    const user = await UserModel.findOne({ username, status: USER_STATUS.ACTIVE });
 
     // if (!user.account) {
     //   const newAccount = await AccountModel.create({
@@ -258,7 +259,7 @@ const userLogin = async (req,  res, next) => {
   }
 };
 
-const userLoginAdmin = async (req,  res, next) => {
+const userLoginAdmin = async (req, res, next) => {
   try {
     const { username, password } = req.body;
     const user = await UserModel.findOne({ username }).populate("role");
@@ -278,11 +279,15 @@ const userLoginAdmin = async (req,  res, next) => {
     // }
 
     if (!user) {
-      return res.json({ status: 400 });
+      return res.json({ status: 400, messages: ["Invalid credentials!"] });
+    }
+
+    if (user.status !== USER_STATUS.ACTIVE) {
+      return res.json({ status: 400, messages: ["Invalid credentials!"] });
     }
 
     if (user.role.rights.includes(RightType.ADMIN_ACCESS) === false) {
-      return res.json({ status: 400 });
+      return res.json({ status: 400, messages: ["Invalid credentials!"] });
     }
 
     // const newActivity = new ActivityModel({
@@ -297,7 +302,7 @@ const userLoginAdmin = async (req,  res, next) => {
     // await newActivity.save();
 
     if (!bcrypt.compareSync(password, user.password)) {
-      return res.json({ status: 400 });
+      return res.json({ status: 400, messages: ["Invalid credentials!"] });
     }
 
     // await user.populate({
@@ -326,6 +331,7 @@ const userLoginAdmin = async (req,  res, next) => {
 
     res.json({
       status: 200,
+      messages: ["Login Successful!"],
       data: {
         token,
       },
@@ -335,7 +341,7 @@ const userLoginAdmin = async (req,  res, next) => {
   }
 };
 
-const userRegister = async (req,  res, next) => {
+const userRegister = async (req, res, next) => {
   try {
     const { username, password, firstName, lastName, email } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -356,7 +362,7 @@ const userRegister = async (req,  res, next) => {
   }
 };
 
-const userLoginGoogle = async (req,  res, next) => {
+const userLoginGoogle = async (req, res, next) => {
   try {
     const { token } = req.body;
 
@@ -420,7 +426,7 @@ const userLoginGoogle = async (req,  res, next) => {
   }
 };
 
-const userInfo = async (req,  res, next) => {
+const userInfo = async (req, res, next) => {
   try {
     // let user = await UserModel.findById(req.user.userId)
     //   .select("-password")
@@ -443,7 +449,7 @@ const userInfo = async (req,  res, next) => {
               input: "$addresses",
               as: "address",
               cond: {
-                $eq: ["$$address.status", "active"],
+                $eq: ["$$address.status", STATUS.ACTIVE],
               },
             },
           },
@@ -487,7 +493,7 @@ const userInfo = async (req,  res, next) => {
   }
 };
 
-const userUpdatePassword = async (req,  res, next) => {
+const userUpdatePassword = async (req, res, next) => {
   try {
     let user = await UserModel.findById(req.user.userId);
     const { currentPassword, newPassword } = req.body;

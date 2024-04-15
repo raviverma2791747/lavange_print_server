@@ -98,8 +98,16 @@ const {
   updateOrderStatusSchema,
   updateOrderShippingSchema,
 } = require("../../validators/order");
-const { getPolicyConfig, updatePolicyConfig } = require("../../controllers/policyconfig");
+const {
+  getPolicyConfig,
+  updatePolicyConfig,
+} = require("../../controllers/policyconfig");
 const expressAsyncHandler = require("express-async-handler");
+const {
+  fetchFacet,
+  getFacet,
+  updateFacet,
+} = require("../../controllers/facets");
 
 dotenv.config();
 
@@ -297,7 +305,7 @@ router.post("/user/change-password", authenticate, updatePassword);
 router.get("/config", authenticate, admin, fetchConfig);
 
 //Stat
-router.get("/stats", authenticate, admin, getStats);
+router.get("/stats", authenticate, admin, expressAsyncHandler(getStats));
 
 //Home config
 //router.get("/config/home", fetchHomeConfig);
@@ -316,8 +324,9 @@ router.post(
   admin,
   expressAsyncHandler(updatePolicyConfig)
 );
-
-
+router.get("/facet", authenticate, admin, expressAsyncHandler(fetchFacet));
+router.get("/facet/:id", authenticate, admin, expressAsyncHandler(getFacet));
+router.post("/facet", authenticate, admin, expressAsyncHandler(updateFacet));
 //User Routes
 
 module.exports = router;

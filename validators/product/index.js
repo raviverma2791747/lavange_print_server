@@ -1,3 +1,5 @@
+const { STATUS, WEIGHT_UNIT, FACET_TYPE } = require("../../helper/constants");
+
 const schema = {
   type: "object",
   properties: {
@@ -43,8 +45,8 @@ const schema = {
       type: "object",
       properties: {
         unit: {
-          type: "string",
-          enum: ["kg", "g", "oz", "lb", "ml", "l"],
+          type: "number",
+          enum: Object.values(WEIGHT_UNIT),
         },
         value: {
           type: "number",
@@ -53,8 +55,8 @@ const schema = {
       required: ["unit", "value"],
     },
     status: {
-      type: "string",
-      enum: ["draft", "active", "archive"],
+      type: "number",
+      enum: Object.values(STATUS),
     },
     isDigitalProduct: {
       type: "boolean",
@@ -77,8 +79,8 @@ const schema = {
           type: "object",
           properties: {
             status: {
-              type: "string",
-              enum: ["draft", "active", "archive"],
+              type: "number",
+              enum: Object.values(STATUS),
             },
             variantSchema: {
               type: "array",
@@ -94,8 +96,8 @@ const schema = {
                       type: "string",
                     },
                     type: {
-                      type: "string",
-                      enum: ["color", "size", "material", "other"],
+                      type: "number",
+                      enum: Object.values(FACET_TYPE),
                     },
                     options: {
                       type: "array",
@@ -110,8 +112,8 @@ const schema = {
                               type: "string",
                             },
                             status: {
-                              type: "string",
-                              enum: ["draft", "active", "archive"],
+                              type: "number",
+                              enum: Object.values(STATUS),
                             },
                           },
                           required: ["displayName", "value", "status"],

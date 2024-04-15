@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const { HomeConfigModel } = require("../../models/config");
 const dotenv = require("dotenv");
 const { assetUrl } = require("../../helper/utils");
+const { STATUS } = require("../../helper/constants");
 
 dotenv.config();
 
@@ -66,7 +67,7 @@ const getHomeConfigPublic = async (req, res, next) => {
           path: "asset",
           select: "_id url title",
         },
-        match: { status: "active" },
+        match: { status: STATUS.ACTIVE },
       })
       .populate({
         path: "exploreProducts",
@@ -74,7 +75,7 @@ const getHomeConfigPublic = async (req, res, next) => {
           path: "assets",
           select: "_id url title",
         },
-        match: { status: "active" },
+        match: { status: STATUS.ACTIVE },
       })
       .populate({
         path: "exploreCollections",
@@ -82,7 +83,7 @@ const getHomeConfigPublic = async (req, res, next) => {
           path: "asset",
           select: "_id url title",
         },
-        match: { status: "active" },
+        match: { status: STATUS.ACTIVE },
       })
       .populate({
         path: "bestSellerProducts",
@@ -90,7 +91,7 @@ const getHomeConfigPublic = async (req, res, next) => {
           path: "assets",
           select: "_id url title",
         },
-        match: { status: "active" },
+        match: { status: STATUS.ACTIVE },
       })
       .populate({
         path: "newArrivalProducts",
@@ -98,11 +99,11 @@ const getHomeConfigPublic = async (req, res, next) => {
           path: "assets",
           select: "_id url title",
         },
-        match: { status: "active" },
+        match: { status: STATUS.ACTIVE },
       })
       .populate({
         path: "featuredCollections",
-        match: { status: "active" },
+        match: { status: STATUS.ACTIVE },
         populate: {
           path: "products",
           populate: {
@@ -110,7 +111,7 @@ const getHomeConfigPublic = async (req, res, next) => {
             select: "_id url title",
           },
 
-          match: { status: "active" },
+          match: { status: STATUS.ACTIVE },
         },
       })
       .lean({ virtuals: true });

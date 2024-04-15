@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const mongooseLeanVirtuals = require("mongoose-lean-virtuals");
 
 const { assetUrl } = require("../../helper/utils");
+const { STATUS, WEIGHT_UNIT, FACET_TYPE } = require("../../helper/constants");
 
 const productSchema = new mongoose.Schema(
   {
@@ -53,9 +54,9 @@ const productSchema = new mongoose.Schema(
       type: mongoose.SchemaTypes.String,
     },
     status: {
-      type: mongoose.SchemaTypes.String,
-      enum: ["active", "draft", "archive"],
-      default: "draft",
+      type: mongoose.SchemaTypes.Number,
+      enum: Object.values(STATUS),
+      default: STATUS.DRAFT,
     },
     isDigitalProduct: {
       type: mongoose.SchemaTypes.Boolean,
@@ -67,9 +68,9 @@ const productSchema = new mongoose.Schema(
         default: 0,
       },
       unit: {
-        type: mongoose.SchemaTypes.String,
-        enum: ["kg", "g", "lb", "oz"],
-        default: "kg",
+        type: mongoose.SchemaTypes.Number,
+        enum: Object.values(WEIGHT_UNIT),
+        default: WEIGHT_UNIT.KG,
       },
     },
     productType: {
@@ -84,8 +85,8 @@ const productSchema = new mongoose.Schema(
     variantConfigs: [
       {
         status: {
-          type: mongoose.SchemaTypes.String,
-          enum: ["active", "draft", "archive"],
+          type: mongoose.SchemaTypes.Number,
+          enum: Object.values(STATUS),
           required: true,
         },
         variantSchema: [
@@ -99,9 +100,9 @@ const productSchema = new mongoose.Schema(
               required: true,
             },
             type: {
-              type: mongoose.SchemaTypes.String,
-              enum: ["color", "size", "material", "other"],
-              default: "other",
+              type: mongoose.SchemaTypes.Number,
+              enum: Object.values(FACET_TYPE),
+              default: FACET_TYPE.OTHER,
               required: true,
             },
             options: [
@@ -115,9 +116,9 @@ const productSchema = new mongoose.Schema(
                   required: true,
                 },
                 status: {
-                  type: mongoose.SchemaTypes.String,
-                  enum: ["active", "draft", "archive"],
-                  default: "draft",
+                  type: mongoose.SchemaTypes.Number,
+                  enum: Object.values(STATUS),
+                  default: STATUS.DRAFT,
                 },
               },
             ],
@@ -178,8 +179,45 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// productSchema.post("find", function (docs) {
+//   docs.forEach((doc) => {
+//     const v = doc.variantConfigs.find((config) => config.status === STATUS.ACTIVE);
+//     if (v) {
+//       doc.price = v.variants.reduce((min, variant) => {
+//         return variant.price <= min ? variant.price : min;
+//       }, Infinity);
+//     }
+//   });
+// });
+
+productSchema.virtual("maxPrice").get(function () {
+  const v = this.variantConfigs.find(
+    (config) => config.status === STATUS.ACTIVE
+  );
+  if (v) {
+    return v.variants.reduce((max, variant) => {
+      return variant.price >= max ? variant.price : max;
+    }, 0);
+  }
+  return this.price;
+});
+
+productSchema.virtual("minPrice").get(function () {
+  const v = this.variantConfigs.find(
+    (config) => config.status === STATUS.ACTIVE
+  );
+  if (v) {
+    return v.variants.reduce((min, variant) => {
+      return variant.price <= min ? variant.price : min;
+    }, Infinity);
+  }
+  return this.price;
+});
+
 productSchema.virtual("variants").get(function () {
-  const v = this.variantConfigs.find((config) => config.status === "active");
+  const v = this.variantConfigs.find(
+    (config) => config.status === STATUS.ACTIVE
+  );
   if (v) {
     return v.variants;
   }
@@ -187,7 +225,9 @@ productSchema.virtual("variants").get(function () {
 });
 
 productSchema.virtual("variantOptions").get(function () {
-  const v = this.variantConfigs.find((config) => config.status === "active");
+  const v = this.variantConfigs.find(
+    (config) => config.status === STATUS.ACTIVE
+  );
   if (v) {
     return v.variantSchema;
   }
@@ -195,7 +235,9 @@ productSchema.virtual("variantOptions").get(function () {
 });
 
 productSchema.virtual("schemaId").get(function () {
-  const v = this.variantConfigs.find((config) => config.status === "active");
+  const v = this.variantConfigs.find(
+    (config) => config.status === STATUS.ACTIVE
+  );
   if (v) {
     return v._id;
   }

@@ -12,7 +12,7 @@ const validate = (schema) => {
       const errors = new AggregateAjvError(validation.errors);
       return res.json({
         status: 500,
-        errors: ["Validation failed", errors.message],
+        messages: ["Validation failed", errors.message],
       });
     }
 
