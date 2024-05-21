@@ -23,6 +23,7 @@ const getUserCheckout = async (req, res, next) => {
 
     let discount = cartTotal - actualTotal;
     let couponValid = false;
+    let couponMessage = [];
 
     const vc = await validateCoupon(coupon_code, cartp, userID);
 
@@ -30,6 +31,7 @@ const getUserCheckout = async (req, res, next) => {
     if (vc.status === 200) {
       discount = vc.data.discount;
       couponValid = true;
+      couponMessage = vc.data.error
     }
     const grandTotal = cartTotal - discount;
 
@@ -40,6 +42,7 @@ const getUserCheckout = async (req, res, next) => {
         discount,
         grandTotal,
         couponValid,
+        couponMessage
       },
     });
   } catch (error) {

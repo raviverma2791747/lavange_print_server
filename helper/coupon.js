@@ -1,6 +1,7 @@
 const CouponModel = require("../models/coupon");
 const UserModel = require("../models/user");
 const { isWithinInterval, parseISO } = require("date-fns");
+const { STATUS, NUMBER_TYPE } = require("./constants");
 
 const validateCoupon = async (code, cart, userID) => {
   if (!code) {
@@ -61,14 +62,15 @@ const validateCoupon = async (code, cart, userID) => {
     };
   }
 
-  if (!coupon.redeem.limit) {
-    return {
-      status: 400,
-      data: {
-        errors: ["Coupon code limit exceeded"],
-      },
-    };
-  }
+  //TO DO: To implement in future
+  // if (!coupon.redeem.limit) {
+  //   return {
+  //     status: 400,
+  //     data: {
+  //       errors: ["Coupon code limit exceeded"],
+  //     },
+  //   };
+  // }
 
   const user = userID ? await UserModel.findById(userID) : null;
 
@@ -81,24 +83,25 @@ const validateCoupon = async (code, cart, userID) => {
     };
   }
 
-  if (coupon.redeem.individualLimit && user) {
-    if (
-      coupon.redeem.individualLimit <=
-      user.couponsUsed.reduce((acc, c) => {
-        if (c === coupon._id) {
-          return acc + 1;
-        }
-        return acc;
-      }, 0)
-    ) {
-      return {
-        status: 400,
-        data: {
-          errors: ["Coupon code limit exceeded"],
-        },
-      };
-    }
-  }
+  //TO DO: To implement in future
+  // if (coupon.redeem.individualLimit && user) {
+  //   if (
+  //     coupon.redeem.individualLimit <=
+  //     user.couponsUsed.reduce((acc, c) => {
+  //       if (c === coupon._id) {
+  //         return acc + 1;
+  //       }
+  //       return acc;
+  //     }, 0)
+  //   ) {
+  //     return {
+  //       status: 400,
+  //       data: {
+  //         errors: ["Coupon code limit exceeded"],
+  //       },
+  //     };
+  //   }
+  // }
 
   if (coupon.users.length && !user) {
     return {
@@ -121,7 +124,7 @@ const validateCoupon = async (code, cart, userID) => {
   }
 
  
-
+  //TO DO: To implement in future
   // if (
   //   coupon.categories.length &&
   //   !coupon.categories.some((p) => {
@@ -227,7 +230,7 @@ const validateCoupon = async (code, cart, userID) => {
 
   let discount = 0;
 
-  if (coupon.discount.type === "percentage") {
+  if (coupon.discount.type === NUMBER_TYPE.PERCENTAGE) {
     discount = totalAmount * (coupon.discount.amount / 100);
     console.log(totalAmount, coupon.discount.amount, discount);
   } else {

@@ -58,10 +58,10 @@ const fetchUser = async (req, res, next) => {
 const getUser = async (req, res, next) => {
   try {
     let user = await UserModel.findById({ _id: req.params.id })
-      .populate({
-        path: "role",
-        select: "_id name",
-      })
+      // .populate({
+      //   path: "role",
+      //   select: "_id name",
+      // })
       .lean();
 
     // User.assets = User.assets.map((asset) => {
@@ -106,6 +106,7 @@ const getUse = async (req, res, next) => {
 
 const updateUser = async (req, res, next) => {
   try {
+    console.log(req.body._id)
     const _id = req.body._id ?? new mongoose.Types.ObjectId();
 
     const User = await UserModel.updateOne(
@@ -121,7 +122,7 @@ const updateUser = async (req, res, next) => {
     return res.json({
       status: 200,
       data: {
-        User: {
+        user: {
           _id,
         },
       },

@@ -24,6 +24,14 @@ const getStats = async (req, res, next) => {
     },
   }).count();
 
+  const recentOrders = await OrderModel.find()
+    .populate({
+      path: "user",
+      select: "_id username email firstName lastName",
+    })
+    .sort("createdAt")
+    .limit(10);
+
   const revenue = await OrderModel.aggregate([
     {
       $match: {
@@ -47,6 +55,7 @@ const getStats = async (req, res, next) => {
       users: users.length ? users[0].count : 0,
       orders,
       revenue: revenue.length ? revenue[0].total : 0,
+      recentOrders,
     },
   });
 };

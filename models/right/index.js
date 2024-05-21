@@ -1,26 +1,23 @@
 const RightType = {
-    // User
-    CREATE_USER: 'CREATE_USER',                    // Create a new user (for self or others)
-    UPDATE_OTHER_USER: 'UPDATE_OTHER_USER',        // Update other user's information
-    UPDATE_USER: 'UPDATE_USER',                    // Update own user information
-    DELETE_USER: 'DELETE_USER',                    // Delete own user account
-    DELETE_OTHER_USER: 'DELETE_OTHER_USER',        // Delete other user's account
-    VIEW_USER: 'VIEW_USER',                        // View own user information
-    VIEW_OTHER_USER: 'VIEW_OTHER_USER',            // View other user's information
-    UPDATE_USER_ROLE: "UPDATE_USER_ROLE",
-    UPDATE_OTHER_USER_ROLE: "UPDATE_OTHER_USER_ROLE",
-    UPDATE_OTHER_USER_PASSWORD: "UPDATE_OTHER_USER_PASSWORD",
+  // User
+  CREATE_USER: 100, // Create a new user (for self or others)
+  UPDATE_OTHER_USER: 101, // Update other user's information
+  UPDATE_USER: 102, // Update own user information
+  DELETE_USER: 103, // Delete own user account
+  DELETE_OTHER_USER: 104, // Delete other user's account
+  VIEW_USER: 105, // View own user information
+  VIEW_OTHER_USER: 106, // View other user's information
+  UPDATE_USER_ROLE: 107,
+  UPDATE_OTHER_USER_ROLE: 108,
+  UPDATE_OTHER_USER_PASSWORD: 109,
 
-    UPDATE_CART: "UPDATE_CART",
-    UPDATE_WISHLIST: "UPDATE_WISHLIST",
+  UPDATE_CART: 201,
+  UPDATE_WISHLIST: 301,
 
-    CREATE_ORDER: "CREATE_ORDER",
-    UPDATE_ORDER: "UPDATE_ORDER",
+  CREATE_ORDER: 401,
+  UPDATE_ORDER: 402,
 
-    VIEW_CONFIG: "VIEW_CONFIG",
-    UPDATE_CONFIG: "UPDATE_CONFIG",
-
-    ADMIN_ACCESS : "ADMIN_ACCESS",
-}
+  ADMIN_ACCESS: 1,
+};
 
 module.exports = RightType;
