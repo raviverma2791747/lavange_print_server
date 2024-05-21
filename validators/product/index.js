@@ -23,6 +23,9 @@ const schema = {
     price: {
       type: "number",
     },
+    compareAtPrice: {
+      type: "number",
+    },
     trackQuantity: {
       type: "boolean",
     },
@@ -139,6 +142,9 @@ const schema = {
                       type: "object",
                     },
                     price: {
+                      type: "number",
+                    },
+                    compareAtPrice: {
                       type: "number",
                     },
                     assets: {

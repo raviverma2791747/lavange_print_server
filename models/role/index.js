@@ -7,7 +7,7 @@ const roleSchema = new mongoose.Schema(
     rights: {
       type: [
         {
-          type: String,
+          type: mongoose.SchemaTypes.Number,
           enum: Object.values(RightType),
           required: true,
         },

@@ -5,23 +5,25 @@ const ProductModel = require("../../models/product");
 const dotenv = require("dotenv");
 const nodemailer = require("nodemailer");
 const { mailTemplate } = require("../../helper/template");
-const { assetUrl } = require("../../helper/utils");
+const { assetUrl, getByValue } = require("../../helper/utils");
 const { getCartPopulated } = require("../../helper/cart");
 const { validateCoupon } = require("../../helper/coupon");
 const CouponModel = require("../../models/coupon");
-const { ORDER_STATUS } = require("../../helper/constants");
+const { ORDER_STATUS, PAYMENT_STATUS } = require("../../helper/constants");
 
 dotenv.config();
 
+
+
 const ORDER_MESSAGE = {
   //write message for each status
-  pending: "Your order has been placed.",
-  placed: "Your order has been placed.",
-  prepared: "Your order has been prepared.",
-  dispatched: "Your order has been dispatched.",
-  cancelled: "Your order has been cancelled.",
-  delivered: "Your order has been delivered.",
-  returned: "Your order has been returned.",
+  PENDING: "Your order has been placed.",
+  PLACED: "Your order has been placed.",
+  PREPARED: "Your order has been prepared.",
+  DISPATCHED: "Your order has been dispatched.",
+  CANCELLED: "Your order has been cancelled.",
+  DELIVERED: "Your order has been delivered.",
+  RETURNED: "Your order has been returned.",
 };
 
 const fetchOrder = async (req, res, next) => {
@@ -97,7 +99,7 @@ const updateOrderStatus = async (req, res, next) => {
     if (oldOrder.status !== newOrder.status) {
       newOrder.timeline.push({
         status: newOrder.status,
-        message: ORDER_MESSAGE[newOrder.status],
+        message: ORDER_MESSAGE[getByValue(newOrder.status)],
       });
 
       console.log(newOrder.timeline);
@@ -160,7 +162,7 @@ const updateUserOrder = async (req, res, next) => {
     if (oldOrder.status !== newOrder.status) {
       newOrder.timeline.push({
         status: newOrder.status,
-        message: ORDER_MESSAGE[newOrder.status],
+        message: ORDER_MESSAGE[getByValue(newOrder.status)],
       });
     }
 
@@ -233,14 +235,14 @@ const createUserOrder = async (req, res, next) => {
     });
 
     //emulate successful order
-    order.status = ORDER_STATUS.placed;
+    order.status = ORDER_STATUS.PLACED;
 
     order.timeline.push({
-      status: ORDER_STATUS.placed,
-      message: ORDER_MESSAGE.placed,
+      status: ORDER_STATUS.PLACED,
+      message: ORDER_MESSAGE.PLACED,
     });
 
-    order.paymentStatus = "success";
+    order.paymentStatus = PAYMENT_STATUS.SUCCESS;
 
     await order.save();
 

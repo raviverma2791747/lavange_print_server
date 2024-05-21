@@ -63,14 +63,17 @@ if (app.get("env") == "production") {
 // );
 
 //For testing purpose adds latency of 5s
-const sleep = (ms) =>
-  new Promise((resolve) =>
-    setTimeout(resolve, Math.floor(Math.random() * ms + 100))
-  );
-app.use(async (req, res, next) => {
-  await sleep(2000);
-  next();
-});
+// const sleep = (ms) =>
+//   new Promise((resolve) =>
+//     setTimeout(resolve, Math.floor(Math.random() * ms + 100))
+//   );
+
+// if (app.get("env") === "dev") {
+//   app.use(async (req, res, next) => {
+//     await sleep(2000);
+//     next();
+//   });
+// }
 
 app.get("/print", async (req, res, next) => {
   return res.json({ status: 200 });

@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const { HomeConfigModel, PolicyConfigModel } = require("../models/config");
-const { STATUS } = require("./constants");
+const { STATUS, USER_STATUS } = require("./constants");
 const RoleModel = require("../models/role");
 const RightType = require("../models/right");
 const UserModel = require("../models/user");
@@ -67,7 +67,7 @@ const initMasterUser = async () => {
         email,
         password: hashedPassword,
         role: ownerRole._id,
-        status: STATUS.ACTIVE,
+        status: USER_STATUS.ACTIVE,
       });
       await user.save();
       console.log("Master user created");
