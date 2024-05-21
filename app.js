@@ -31,6 +31,7 @@ if (app.get("env") == "production") {
   app.use(
     cors({
       origin: [
+        "https://www.inkalam.com",
         "https://inkalam.com",
         "https://print.lavange.in",
         "https://admin-print.lavange.in",
