@@ -96,6 +96,5 @@ app.use(errorHandler);
 init();
 
 app.listen(process.env.PORT, "0.0.0.0", () => {
-  console.log(process.env.AWS_S3_BUCKET);
   console.log(`Started server in ${app.get("env")} at:`, process.env.PORT);
 });

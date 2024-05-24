@@ -115,7 +115,7 @@ dotenv.config();
 var storage;
 var s3;
 
-if (process.env.NODE_ENV === "production") {
+if (process.env.NODE_ENV === "production" && !process.env.MEDIA_LOCAL) {
   s3 = new S3Client({
     region: process.env.AWS_REGION,
     credentials: {
