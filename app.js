@@ -17,6 +17,7 @@ const mongoose = require("mongoose");
 const { init } = require("./helper/init");
 const fs = require("fs");
 const errorHandler = require("./middlewares/errorHandler.js");
+const session = require("express-session");
 
 dotenv.config();
 
@@ -44,6 +45,13 @@ if (app.get("env") == "production") {
   app.use(cors());
 }
 
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: true,
+  })
+);
 app.use(bodyParser.json({ limit: "10mb" }));
 app.use(bodyParser.xml({ limit: "10mb" }));
 app.use(bodyParser.urlencoded({ extended: false, limit: "10mb" }));

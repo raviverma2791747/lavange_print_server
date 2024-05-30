@@ -6,6 +6,8 @@ const { OAuth2Client } = require("google-auth-library");
 const RightType = require("../../models/right");
 const RoleModel = require("../../models/role");
 const { STATUS, USER_STATUS } = require("../../helper/constants");
+const passport = require("passport");
+require("./auth/google");
 
 const fetchUser = async (req, res, next) => {
   try {
@@ -237,7 +239,7 @@ const userLogin = async (req, res, next) => {
     //   select: ["_id", "name", "rights"], // Specify the fields you want to populate
     // });
 
-    const { id: userId, username: _username, firstName, lastName } = user;
+    const { _id: userId, username: _username, firstName, lastName } = user;
 
     // await newActivity.save();
 
