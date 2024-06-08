@@ -416,8 +416,10 @@ const getUserProduct = async (req, res, next) => {
         "-shippingWeight -isDigitalProduct -hasSKU -barcode -tags -trackQuantity -inventoryQuantity"
       )
       .lean({ virtuals: true });
-
-    delete product.variantConfigs;
+    
+    if (product) {
+       delete product.variantConfigs;
+    }
 
     return res.json({
       status: 200,
