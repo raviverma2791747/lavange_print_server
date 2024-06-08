@@ -36,7 +36,7 @@ passport.use(
         user = new UserModel({
           username: profileInfo.email,
           firstName: profileInfo.given_name,
-          lastName: profileInfo.family_name,
+          lastName: profileInfo.family_name ?? '',
           email: profileInfo.email,
           role: userRole._id,
           status: USER_STATUS.ACTIVE,
