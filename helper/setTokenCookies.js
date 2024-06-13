@@ -12,13 +12,13 @@ const setTokenCookies = (
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
     maxAge: accessTokenMaxAge,
-    sameSite: false,
+    sameSite: "none",
     secure: true,
   });
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
     maxAge: refreshTokenMaxAge,
-    sameSite: false,
+    sameSite: "none",
     secure: true,
   });
 };
