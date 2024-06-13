@@ -1,6 +1,8 @@
 const express = require("express");
 const cookieParser = require("cookie-parser");
+const connectDB = require("./config/connectdb.js");
 const morgan = require("morgan");
+const passport = require("passport");
 //const multer = require("multer");
 const path = require("path");
 
@@ -26,20 +28,22 @@ const app = express();
 app.set("env", process.env.NODE_ENV || "development");
 app.set("trust proxy", true);
 
-mongoose.connect(process.env.MONGO_URI);
+connectDB(process.env.MONGO_URI,process.env.DB_NAME);
 
+const allowedOrigins = process.env.CORS_ALLOWED_ORIGINS.split(",");
 if (app.get("env") == "production") {
   app.use(
     cors({
-      origin: [
-        "https://print.lavange.in",
-        "https://admin-print.lavange.in",
-        "https://ecommerce-one-drab-95.vercel.app",
-      ],
+      origin: allowedOrigins,
+      credentials: true,
+      optionsSuccessStatus: 200,
     })
   );
 } else {
-  app.use(cors());
+  app.use(cors({
+    credentials: true,
+    origin: true
+  }));
 }
 
 app.use(
@@ -52,6 +56,7 @@ app.use(
 app.use(bodyParser.json({ limit: "10mb" }));
 app.use(bodyParser.xml({ limit: "10mb" }));
 app.use(bodyParser.urlencoded({ extended: false, limit: "10mb" }));
+app.use(passport.initialize());
 app.use(cookieParser());
 app.use(require("express-status-monitor")());
 app.use("/media", express.static(path.join(__dirname, process.env.MEDIA_PATH)));
