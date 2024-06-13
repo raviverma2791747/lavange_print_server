@@ -31,6 +31,7 @@ app.set("trust proxy", true);
 connectDB(process.env.MONGO_URI,process.env.DB_NAME);
 
 const allowedOrigins = process.env.CORS_ALLOWED_ORIGINS.split(",");
+console.log("Allowed Origins: ",allowedOrigins);
 if (app.get("env") == "production") {
   app.use(
     cors({
