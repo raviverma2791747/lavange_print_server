@@ -13,8 +13,11 @@ const {
   loginUserPublic,
   userExistPublic,
   registerUserPublic,
-  loginUserGooglePublic,
+  //loginUserGooglePublic,
   userLoginAdmin,
+  userVerifyEmail,
+  userLoginGoogle,
+  // getAccessToken
 } = require("../../controllers/user");
 const {
   getUserCategory,
@@ -29,6 +32,7 @@ const { fetchPolicyConfig } = require("../../controllers/policyconfig");
 
 const passport = require("passport");
 require("../../controllers/user/auth/google");
+require("../../controllers/user/auth/jwt-auth");
 const jwt = require("jsonwebtoken");
 
 const router = express.Router();
@@ -40,9 +44,10 @@ router.get("/product", asyncHandler(fetchUserProduct));
 router.post("/user/login", loginUserPublic);
 router.post("/user/login/admin", userLoginAdmin);
 router.post("/user/register", registerUserPublic);
-router.post("/user/exist", userExistPublic);
+//router.post("/user/exist", passport.authenticate("jwt"), userExistPublic);
+router.post("/user/exist",asyncHandler(userExistPublic));
 //legacy
-router.post("/user/login/google", loginUserGooglePublic);
+//router.post("/user/login/google", loginUserGooglePublic);
 //new
 router.get("/user/auth/google", (req, res, next) => {
   const redirect_uri = req.query.redirect_uri;
@@ -58,23 +63,10 @@ router.get(
   passport.authenticate("google", {
     failureRedirect: process.env.GOOGLE_CALLBACK_URL,
   }),
-  (req, res) => {
-    const { _id: userId, username: _username, firstName, lastName } = req.user; 
-    const jwt_token = jwt.sign(
-      { userId, username: _username, firstName, lastName },
-      process.env.JWT_SECRET_KEY,
-      {
-        expiresIn: "8h",
-      }
-    );
-
-    res.cookie("token", jwt_token, {
-      httpOnly: false
-    });
-
-    return res.redirect(req.authInfo.state.redirect_uri);
-  }
+  asyncHandler(userLoginGoogle)
 );
+// router.post("/user/refresh/token", asyncHandler(getAccessToken));
+router.post("/user/verify/email", asyncHandler(userVerifyEmail));
 router.get("/category", fetchUserCategory);
 router.get("/collection", fetchUserCollection);
 

@@ -1,13 +1,17 @@
 const mongoose = require("mongoose");
 const UserModel = require("../../models/user");
-const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { OAuth2Client } = require("google-auth-library");
 const RightType = require("../../models/right");
 const RoleModel = require("../../models/role");
+const OtpModel = require("../../models/otp");
 const { STATUS, USER_STATUS } = require("../../helper/constants");
 const passport = require("passport");
 require("./auth/google");
+const sendEmailVerificationOTP = require("../../helper/sendEmailVerification");
+const generateTokens = require("../../helper/generateTokens");
+const setTokenCookies = require("../../helper/setTokenCookies");
+const refreshAccessToken = require("../../helper/refreshAccessToken");
 
 const fetchUser = async (req, res, next) => {
   try {
@@ -108,7 +112,7 @@ const getUse = async (req, res, next) => {
 
 const updateUser = async (req, res, next) => {
   try {
-    console.log(req.body._id)
+    console.log(req.body._id);
     const _id = req.body._id ?? new mongoose.Types.ObjectId();
 
     const User = await UserModel.updateOne(
@@ -184,22 +188,20 @@ const getUserPublic = async (req, res, next) => {
 };
 
 const userExist = async (req, res, next) => {
-  try {
-    const user = await UserModel.findOne({ username: req.body.username });
-    if (user) {
-      return res.json({ status: 200 });
-    }
-
-    return res.json({ status: 400 });
-  } catch (error) {
-    next(error);
+  const user = await UserModel.findOne({ username: req.body.username });
+  if (user) {
+    return res.json({ status: 200 });
   }
+  return res.json({ status: 400 });
 };
 
 const userLogin = async (req, res, next) => {
   try {
     const { username, password } = req.body;
-    const user = await UserModel.findOne({ username, status: USER_STATUS.ACTIVE });
+    const user = await UserModel.findOne({
+      username,
+      status: USER_STATUS.ACTIVE,
+    });
 
     // if (!user.account) {
     //   const newAccount = await AccountModel.create({
@@ -239,22 +241,24 @@ const userLogin = async (req, res, next) => {
     //   select: ["_id", "name", "rights"], // Specify the fields you want to populate
     // });
 
-    const { _id: userId, username: _username, firstName, lastName } = user;
+    const { accessToken, refreshToken, accessTokenExp, refreshTokenExp } =
+      await generateTokens(user);
 
-    // await newActivity.save();
-
-    const token = jwt.sign(
-      { userId, username: _username, firstName, lastName },
-      process.env.JWT_SECRET_KEY,
-      {
-        expiresIn: "8h",
-      }
+    setTokenCookies(
+      res,
+      accessToken,
+      refreshToken,
+      accessTokenExp,
+      refreshTokenExp
     );
 
     res.json({
       status: 200,
       data: {
-        token,
+        accessToken,
+        refreshToken,
+        access_token_exp: accessTokenExp,
+        refresh_token_exp: refreshTokenExp,
       },
     });
   } catch (error) {
@@ -313,30 +317,25 @@ const userLoginAdmin = async (req, res, next) => {
     //   select: ["_id", "name", "rights"], // Specify the fields you want to populate
     // });
 
-    const { id: userId, username: _username, firstName, lastName } = user;
+    const { accessToken, refreshToken, accessTokenExp, refreshTokenExp } =
+      await generateTokens(user);
 
-    // await newActivity.save();
-
-    const token = jwt.sign(
-      {
-        userId,
-        username: _username,
-        firstName,
-        lastName,
-        role: user.role.name,
-        rights: user.role.rights,
-      },
-      process.env.JWT_SECRET_KEY,
-      {
-        expiresIn: "8h",
-      }
+    setTokenCookies(
+      res,
+      accessToken,
+      refreshToken,
+      accessTokenExp,
+      refreshTokenExp
     );
 
     res.json({
       status: 200,
       messages: ["Login Successful!"],
       data: {
-        token,
+        accessToken,
+        refreshToken,
+        access_token_exp: accessTokenExp,
+        refresh_token_exp: refreshTokenExp,
       },
     });
   } catch (error) {
@@ -365,69 +364,70 @@ const userRegister = async (req, res, next) => {
   }
 };
 
-const userLoginGoogle = async (req, res, next) => {
-  try {
-    const { token } = req.body;
+//legacy
+// const userLoginGoogle = async (req, res, next) => {
+//   try {
+//     const { token } = req.body;
 
-    if (!token) {
-      return res.json({ status: 400 });
-    }
+//     if (!token) {
+//       return res.json({ status: 400 });
+//     }
 
-    const oAuth2Client = new OAuth2Client(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET
-    );
+//     const oAuth2Client = new OAuth2Client(
+//       process.env.GOOGLE_CLIENT_ID,
+//       process.env.GOOGLE_CLIENT_SECRET
+//     );
 
-    let token_info;
+//     let token_info;
 
-    try {
-      token_info = await oAuth2Client.verifyIdToken({ idToken: token });
-    } catch (error) {
-      return res.json({ status: 400 });
-    }
+//     try {
+//       token_info = await oAuth2Client.verifyIdToken({ idToken: token });
+//     } catch (error) {
+//       return res.json({ status: 400 });
+//     }
 
-    let user = await UserModel.findOne({
-      $or: [
-        { username: token_info.payload.email },
-        { email: token_info.payload.email },
-      ],
-    });
+//     let user = await UserModel.findOne({
+//       $or: [
+//         { username: token_info.payload.email },
+//         { email: token_info.payload.email },
+//       ],
+//     });
 
-    if (!user) {
-      const userRole = await RoleModel.findOne({ name: "user" });
-      user = new UserModel({
-        username: token_info.payload.email,
-        firstName: token_info.payload.given_name,
-        lastName: token_info.payload.family_name,
-        email: token_info.payload.email,
-        role: userRole._id,
-      });
+//     if (!user) {
+//       const userRole = await RoleModel.findOne({ name: "user" });
+//       user = new UserModel({
+//         username: token_info.payload.email,
+//         firstName: token_info.payload.given_name,
+//         lastName: token_info.payload.family_name,
+//         email: token_info.payload.email,
+//         role: userRole._id,
+//       });
 
-      await user.save();
-    }
+//       await user.save();
+//     }
 
-    const { id: userId, username: _username, firstName, lastName } = user;
+//     const { id: userId, username: _username, firstName, lastName } = user;
 
-    // await newActivity.save();
+//     // await newActivity.save();
 
-    const jwt_token = jwt.sign(
-      { userId, username: _username, firstName, lastName },
-      process.env.JWT_SECRET_KEY,
-      {
-        expiresIn: "8h",
-      }
-    );
+//     const jwt_token = jwt.sign(
+//       { userId, username: _username, firstName, lastName },
+//       process.env.JWT_SECRET_KEY,
+//       {
+//         expiresIn: "8h",
+//       }
+//     );
 
-    return res.json({
-      status: 200,
-      data: {
-        token: jwt_token,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+//     return res.json({
+//       status: 200,
+//       data: {
+//         token: jwt_token,
+//       },
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 
 const userInfo = async (req, res, next) => {
   try {
@@ -517,6 +517,85 @@ const userUpdatePassword = async (req, res, next) => {
   }
 };
 
+const userVerifyEmail = async (req, res, next) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    return res.json({ status: 400 });
+  }
+
+  const user = await UserModel.findOne({ email });
+  if (!user) {
+    return res.json({ status: 400, messages: ["User not found"] });
+  }
+
+  if (user.isVerified) {
+    return res.json({
+      status: 200,
+      data: {},
+      messages: ["Email already verified"],
+    });
+  }
+
+  const otp_data = await OtpModel.findOne({ user: user._id, otp });
+
+  if (!otp_data) {
+    await sendEmailVerificationOTP(user);
+    return res.json({ status: 400, messages: ["OTP Expired. New OTP sent"] });
+  }
+
+  user.isVerified = true;
+  await user.save();
+  await OtpModel.deleteOne({ _id: otp_data._id });
+  return res.json({
+    status: 200,
+    data: {},
+    messages: ["Email verified successfully"],
+  });
+};
+
+const userLoginGoogle = async (req, res, next) => {
+  const { _id: userId, username: _username, firstName, lastName } = req.user;
+  const { accessToken, refreshToken, accessTokenExp, refreshTokenExp } =
+    await generateTokens(userId, _username, firstName, lastName, res);
+  setTokenCookies(
+    res,
+    accessToken,
+    refreshToken,
+    accessTokenExp,
+    refreshTokenExp
+  );
+  return res.redirect(req.authInfo.state.redirect_uri);
+};
+
+// const getAccessToken = async (req, res, next) => {
+//   const {
+//     newAccessToken,
+//     newRefreshToken,
+//     newAccessTokenExp,
+//     newRefreshTokenExp,
+//   } = await refreshAccessToken(req, res);
+
+//   setTokenCookies(
+//     res,
+//     newAccessToken,
+//     newRefreshToken,
+//     newAccessTokenExp,
+//     newRefreshTokenExp
+//   );
+
+//   return res.json({
+//     status: 200,
+//     data: {
+//       accessToken: newAccessToken,
+//       refreshToken: newRefreshToken,
+//       accessTokenExp: newAccessTokenExp,
+//       refreshTokenExp: newRefreshTokenExp,
+//     },
+//     messages: ["Token refreshed successfully"],
+//   });
+// };
+
 module.exports = {
   fetchUser,
   getUser,
@@ -525,8 +604,11 @@ module.exports = {
   loginUserPublic: userLogin,
   userExistPublic: userExist,
   registerUserPublic: userRegister,
-  loginUserGooglePublic: userLoginGoogle,
+  //loginUserGooglePublic: userLoginGoogle,
+  userLoginGoogle,
   userInfo,
   updatePassword: userUpdatePassword,
   userLoginAdmin,
+  userVerifyEmail,
+  // getAccessToken,
 };

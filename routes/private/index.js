@@ -102,7 +102,7 @@ const {
   getPolicyConfig,
   updatePolicyConfig,
 } = require("../../controllers/policyconfig");
-const expressAsyncHandler = require("express-async-handler");
+const asyncHandler = require("express-async-handler");
 const {
   fetchFacet,
   getFacet,
@@ -271,12 +271,12 @@ router.post(
 );
 
 //Wishlist
-router.get("/user/wishlist", authenticate, getUserWishlist);
+router.get("/user/wishlist", authenticate, asyncHandler(getUserWishlist));
 router.post("/user/wishlist/add", authenticate, addUserWishlist);
 router.post("/user/wishlist/remove", authenticate, removeUserWishlist);
 
 //Cart
-router.get("/user/cart", authenticate, getUserCart);
+router.get("/user/cart", authenticate, asyncHandler(getUserCart));
 router.post("/user/cart/add", authenticate, addUserCart);
 router.post("/user/cart/remove", authenticate, removeUserCart);
 router.post("/user/cart/delete", authenticate, deleteUserCart);
@@ -296,7 +296,7 @@ router.get("/right", authenticate, fetchRight);
 
 //User
 router.get("/user", authenticate, admin, fetchUser);
-router.get("/user/info", authenticate, userInfo);
+router.get("/user/info", authenticate, asyncHandler(userInfo));
 router.get("/user/:id", authenticate, admin, getUser);
 router.post("/user", authenticate, admin, updateUser);
 router.post("/user/change-password", authenticate, updatePassword);
@@ -305,7 +305,7 @@ router.post("/user/change-password", authenticate, updatePassword);
 router.get("/config", authenticate, admin, fetchConfig);
 
 //Stat
-router.get("/stats", authenticate, admin, expressAsyncHandler(getStats));
+router.get("/stats", authenticate, admin, asyncHandler(getStats));
 
 //Home config
 //router.get("/config/home", fetchHomeConfig);
@@ -316,17 +316,17 @@ router.get(
   "/config/policy/:name",
   authenticate,
   admin,
-  expressAsyncHandler(getPolicyConfig)
+  asyncHandler(getPolicyConfig)
 );
 router.post(
   "/config/policy",
   authenticate,
   admin,
-  expressAsyncHandler(updatePolicyConfig)
+  asyncHandler(updatePolicyConfig)
 );
-router.get("/facet", authenticate, admin, expressAsyncHandler(fetchFacet));
-router.get("/facet/:id", authenticate, admin, expressAsyncHandler(getFacet));
-router.post("/facet", authenticate, admin, expressAsyncHandler(updateFacet));
+router.get("/facet", authenticate, admin, asyncHandler(fetchFacet));
+router.get("/facet/:id", authenticate, admin, asyncHandler(getFacet));
+router.post("/facet", authenticate, admin, asyncHandler(updateFacet));
 //User Routes
 
 module.exports = router;

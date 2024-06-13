@@ -2,8 +2,7 @@ const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const UserModel = require("../../../models/user");
 const RoleModel = require("../../../models/role");
-const jwt = require("jsonwebtoken");
-const bcrypt = require("bcrypt");
+const sendEmailVerificationOTP = require("../../../helper/sendEmailVerification");
 const { USER_STATUS } = require("../../../helper/constants");
 
 passport.serializeUser(function (user, done) {
@@ -36,13 +35,15 @@ passport.use(
         user = new UserModel({
           username: profileInfo.email,
           firstName: profileInfo.given_name,
-          lastName: profileInfo.family_name ?? '',
+          lastName: profileInfo.family_name ?? "",
           email: profileInfo.email,
           role: userRole._id,
           status: USER_STATUS.ACTIVE,
         });
 
         await user.save();
+
+        await sendEmailVerificationOTP(user);
       }
       return done(null, user.toObject());
     }
