@@ -299,7 +299,11 @@ router.get("/user", authenticate, admin, fetchUser);
 router.get("/user/info", authenticate, asyncHandler(userInfo));
 router.get("/user/:id", authenticate, admin, getUser);
 router.post("/user", authenticate, admin, updateUser);
-router.post("/user/change-password", authenticate, updatePassword);
+router.post(
+  "/user/change-password",
+  authenticate,
+  asyncHandler(updatePassword)
+);
 
 //Config
 router.get("/config", authenticate, admin, fetchConfig);
