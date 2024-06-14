@@ -2,13 +2,14 @@ const jwt = require("jsonwebtoken");
 const TokenModel = require("../models/token");
 
 const generateTokens = async (user) => {
+
   const payload = {
     userId: user._id,
     username: user.username,
     firstName: user.firstName,
     lastName: user.lastName,
-    role: user.role?.name,
-    rights: user.role?.rights,
+    role: user.role.name,
+    rights: user.role.rights,
   };
 
   // Generate access token with 1 hour expiration

@@ -17,6 +17,9 @@ const {
   userLoginAdmin,
   userVerifyEmail,
   userLoginGoogle,
+  userLogout,
+  userSendPasswordResetEmail,
+  userPasswordReset,
   // getAccessToken
 } = require("../../controllers/user");
 const {
@@ -45,7 +48,7 @@ router.post("/user/login", loginUserPublic);
 router.post("/user/login/admin", userLoginAdmin);
 router.post("/user/register", registerUserPublic);
 //router.post("/user/exist", passport.authenticate("jwt"), userExistPublic);
-router.post("/user/exist",asyncHandler(userExistPublic));
+router.post("/user/exist", asyncHandler(userExistPublic));
 //legacy
 //router.post("/user/login/google", loginUserGooglePublic);
 //new
@@ -67,6 +70,9 @@ router.get(
 );
 // router.post("/user/refresh/token", asyncHandler(getAccessToken));
 router.post("/user/verify/email", asyncHandler(userVerifyEmail));
+router.post("/user/logout", asyncHandler(userLogout));
+router.post("/user/password/reset/:id/:token", asyncHandler(userPasswordReset));
+router.post("/user/password/reset/link", asyncHandler(userSendPasswordResetEmail));
 router.get("/category", fetchUserCategory);
 router.get("/collection", fetchUserCollection);
 

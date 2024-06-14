@@ -11,7 +11,7 @@ const refreshAccessToken = async (req, res) => {
     throw { status: 401, messages: ["Invalid refresh token"] };
   }
 
-  const user = await UserModel.findById(tokenDetails.userId);
+  const user = await UserModel.findById(tokenDetails.userId).populate("role");
 
   if (!user) {
     throw { status: 401, messages: ["User not found"] };

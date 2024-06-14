@@ -4,6 +4,7 @@ const bcrypt = require("bcrypt");
 const { OAuth2Client } = require("google-auth-library");
 const RightType = require("../../models/right");
 const RoleModel = require("../../models/role");
+const TokenModel = require("../../models/token");
 const OtpModel = require("../../models/otp");
 const { STATUS, USER_STATUS } = require("../../helper/constants");
 const passport = require("passport");
@@ -12,6 +13,8 @@ const sendEmailVerificationOTP = require("../../helper/sendEmailVerification");
 const generateTokens = require("../../helper/generateTokens");
 const setTokenCookies = require("../../helper/setTokenCookies");
 const refreshAccessToken = require("../../helper/refreshAccessToken");
+const transporter = require("../../config/emailConfig");
+const jwt = require("jsonwebtoken");
 
 const fetchUser = async (req, res, next) => {
   try {
@@ -88,31 +91,8 @@ const getUser = async (req, res, next) => {
   }
 };
 
-const getUse = async (req, res, next) => {
-  try {
-    let User = await UserModel.findById({ _id: req.params.id }).lean();
-
-    // User.assets = User.assets.map((asset) => {
-    //   return {
-    //     ...asset,
-    //     url: `${process.env.BASE_URI}:${process.env.PORT || 3000}/media/${asset.id}`,
-    //   };
-    // });
-
-    return res.json({
-      status: 200,
-      data: {
-        User,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
 const updateUser = async (req, res, next) => {
   try {
-    console.log(req.body._id);
     const _id = req.body._id ?? new mongoose.Types.ObjectId();
 
     const User = await UserModel.updateOne(
@@ -201,7 +181,7 @@ const userLogin = async (req, res, next) => {
     const user = await UserModel.findOne({
       username,
       status: USER_STATUS.ACTIVE,
-    });
+    }).populate("role");
 
     // if (!user.account) {
     //   const newAccount = await AccountModel.create({
@@ -269,7 +249,10 @@ const userLogin = async (req, res, next) => {
 const userLoginAdmin = async (req, res, next) => {
   try {
     const { username, password } = req.body;
-    const user = await UserModel.findOne({ username }).populate("role");
+    const user = await UserModel.findOne({
+      username,
+      status: USER_STATUS.ACTIVE,
+    }).populate("role");
 
     // if (!user.account) {
     //   const newAccount = await AccountModel.create({
@@ -496,25 +479,96 @@ const userInfo = async (req, res, next) => {
   }
 };
 
-const userUpdatePassword = async (req, res, next) => {
-  try {
-    let user = await UserModel.findById(req.user.userId);
-    const { currentPassword, newPassword } = req.body;
+const userUpdatePassword = async (req, res) => {
+  const { password, confirmPassword } = req.body;
 
-    if (user.password && !bcrypt.compareSync(currentPassword, user.password)) {
-      return res.json({ status: 400 });
-    }
-
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    user.password = hashedPassword;
-
-    await user.save();
-
-    return res.json({ status: 200 });
-  } catch (error) {
-    next(error);
+  if (!password || !confirmPassword) {
+    return res.json({
+      status: 400,
+      messages: ["Password and confirm Password is required"],
+    });
   }
+
+  if (password !== confirmPassword) {
+    return res.json({
+      status: 400,
+      messages: ["Password and confirm Password does not match"],
+    });
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  await UserModel.findByIdAndUpdate(req.user.userId, {
+    password: hashedPassword,
+  });
+
+  return res.json({ status: 200, messages: ["Password updated successfully"] });
+};
+
+const userSendPasswordResetEmail = async (req, res) => {
+  const { email, url } = req.body;
+
+  if (!email) {
+    return res.json({ status: 400, messages: ["Email is required"] });
+  }
+
+  const user = await UserModel.findOne({
+    $or: [{ email }, { username: email }],
+  });
+
+  if (!user) {
+    return res.json({ status: 400, messages: ["User not found!"] });
+  }
+
+  const secret = user._id + process.env.JWT_ACCESS_SECRET_KEY;
+  const token = jwt.sign({ userId: user._id }, secret, {
+    expiresIn: "15m",
+  });
+
+  const link = `${url}/${user._id}/${token}`;
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_FROM,
+    to: user.email,
+    subject: "Password Reset Link",
+    html: `<p>Hello ${user.username}</p>
+    <p>Use the following link to reset your password: </p>
+    <a href="${link}">${link}</a>
+    <p>Note that this link will expire in 15 minutes.</p>
+    `,
+  });
+
+  return res.json({ status: 200, messages: ["Password reset link sent"] });
+};
+
+const userPasswordReset = async (req, res) => {
+  const { password, confirmPassword } = req.body;
+  const { id, token } = req.params;
+
+  const user = await UserModel.findById(id);
+
+  if (!user) {
+    return res.json({ status: 400, messages: ["User not found"] });
+  }
+
+  const new_secret = user._id + process.env.JWT_ACCESS_SECRET_KEY;
+  try {
+    jwt.verify(token, new_secret);
+  } catch (error) {
+    return res.json({ status: 400, messages: ["Invalid token"] });
+  }
+  if (!password || !confirmPassword) {
+    return res.json({ status: 400, messages: ["Password is required"] });
+  }
+
+  if (password !== confirmPassword) {
+    return res.json({ status: 400, messages: ["Password does not match"] });
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+  user.password = hashedPassword;
+  await user.save();
+  return res.json({ status: 200, messages: ["Password updated successfully"] });
 };
 
 const userVerifyEmail = async (req, res, next) => {
@@ -555,9 +609,9 @@ const userVerifyEmail = async (req, res, next) => {
 };
 
 const userLoginGoogle = async (req, res, next) => {
-  const { _id: userId, username: _username, firstName, lastName } = req.user;
+const user = req.user;
   const { accessToken, refreshToken, accessTokenExp, refreshTokenExp } =
-    await generateTokens(userId, _username, firstName, lastName, res);
+    await generateTokens(user);
   setTokenCookies(
     res,
     accessToken,
@@ -596,6 +650,20 @@ const userLoginGoogle = async (req, res, next) => {
 //   });
 // };
 
+const userLogout = async (req, res, next) => {
+  const refreshAccessToken = req.cookies.refreshToken;
+
+  if (refreshAccessToken) {
+    const userRefreshToken = await TokenModel.findOneAndUpdate(
+      { token: refreshAccessToken },
+      { $set: { blacklisted: true } }
+    );
+  }
+  res.clearCookie("accessToken");
+  res.clearCookie("refreshToken");
+  return res.json({ status: 200, messages: ["Logout successful!"] });
+};
+
 module.exports = {
   fetchUser,
   getUser,
@@ -611,4 +679,7 @@ module.exports = {
   userLoginAdmin,
   userVerifyEmail,
   // getAccessToken,
+  userLogout,
+  userSendPasswordResetEmail,
+  userPasswordReset,
 };
