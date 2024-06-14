@@ -17,6 +17,7 @@ const {
   userLoginAdmin,
   userVerifyEmail,
   userLoginGoogle,
+  userLoginFacebook,
   userLogout,
   userSendPasswordResetEmail,
   userPasswordReset,
@@ -36,6 +37,7 @@ const { fetchPolicyConfig } = require("../../controllers/policyconfig");
 const passport = require("passport");
 require("../../controllers/user/auth/google");
 require("../../controllers/user/auth/jwt-auth");
+require("../../controllers/user/auth/facebook");
 const jwt = require("jsonwebtoken");
 
 const router = express.Router();
@@ -68,11 +70,30 @@ router.get(
   }),
   asyncHandler(userLoginGoogle)
 );
+router.get("/user/auth/facebook", (req, res, next) => {
+  const redirect_uri = req.query.redirect_uri;
+  passport.authenticate("facebook", {
+    scope: ["email"],
+    state: {
+      redirect_uri: redirect_uri,
+    },
+  })(req, res, next);
+});
+router.get(
+  "/user/auth/facebook/callback",
+  passport.authenticate("facebook", {
+    failureRedirect: process.env.FACEBOOK_CALLBACK_URL,
+  }),
+  asyncHandler(userLoginFacebook)
+);
 // router.post("/user/refresh/token", asyncHandler(getAccessToken));
 router.post("/user/verify/email", asyncHandler(userVerifyEmail));
 router.post("/user/logout", asyncHandler(userLogout));
 router.post("/user/password/reset/:id/:token", asyncHandler(userPasswordReset));
-router.post("/user/password/reset/link", asyncHandler(userSendPasswordResetEmail));
+router.post(
+  "/user/password/reset/link",
+  asyncHandler(userSendPasswordResetEmail)
+);
 router.get("/category", fetchUserCategory);
 router.get("/collection", fetchUserCollection);
 

@@ -622,6 +622,20 @@ const user = req.user;
   return res.redirect(req.authInfo.state.redirect_uri);
 };
 
+const userLoginFacebook = async (req, res, next) => {
+  const user = req.user;
+    const { accessToken, refreshToken, accessTokenExp, refreshTokenExp } =
+      await generateTokens(user);
+    setTokenCookies(
+      res,
+      accessToken,
+      refreshToken,
+      accessTokenExp,
+      refreshTokenExp
+    );
+    return res.redirect(req.authInfo.state.redirect_uri);
+  };
+
 // const getAccessToken = async (req, res, next) => {
 //   const {
 //     newAccessToken,
@@ -674,6 +688,7 @@ module.exports = {
   registerUserPublic: userRegister,
   //loginUserGooglePublic: userLoginGoogle,
   userLoginGoogle,
+  userLoginFacebook,
   userInfo,
   updatePassword: userUpdatePassword,
   userLoginAdmin,
