@@ -28,7 +28,7 @@ passport.use(
 
       let user = await UserModel.findOne({
         $or: [{ username: profileInfo.email }, { email: profileInfo.email }],
-      });
+      }).populate("role");
 
       if (!user) {
         const userRole = await RoleModel.findOne({ name: "user" });
@@ -43,7 +43,7 @@ passport.use(
 
         await user.save();
 
-        await sendEmailVerificationOTP(user);
+        //await sendEmailVerificationOTP(user);
       }
       return done(null, user.toObject());
     }

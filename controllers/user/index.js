@@ -93,7 +93,6 @@ const getUser = async (req, res, next) => {
 
 const updateUser = async (req, res, next) => {
   try {
-    console.log(req.body._id);
     const _id = req.body._id ?? new mongoose.Types.ObjectId();
 
     const User = await UserModel.updateOne(
@@ -182,7 +181,7 @@ const userLogin = async (req, res, next) => {
     const user = await UserModel.findOne({
       username,
       status: USER_STATUS.ACTIVE,
-    });
+    }).populate("role");
 
     // if (!user.account) {
     //   const newAccount = await AccountModel.create({
@@ -250,7 +249,10 @@ const userLogin = async (req, res, next) => {
 const userLoginAdmin = async (req, res, next) => {
   try {
     const { username, password } = req.body;
-    const user = await UserModel.findOne({ username }).populate("role");
+    const user = await UserModel.findOne({
+      username,
+      status: USER_STATUS.ACTIVE,
+    }).populate("role");
 
     // if (!user.account) {
     //   const newAccount = await AccountModel.create({
@@ -607,9 +609,9 @@ const userVerifyEmail = async (req, res, next) => {
 };
 
 const userLoginGoogle = async (req, res, next) => {
-  const { _id: userId, username: _username, firstName, lastName } = req.user;
+const user = req.user;
   const { accessToken, refreshToken, accessTokenExp, refreshTokenExp } =
-    await generateTokens(userId, _username, firstName, lastName, res);
+    await generateTokens(user);
   setTokenCookies(
     res,
     accessToken,
