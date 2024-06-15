@@ -15,6 +15,7 @@ const setTokenCookies = require("../../helper/setTokenCookies");
 const refreshAccessToken = require("../../helper/refreshAccessToken");
 const transporter = require("../../config/emailConfig");
 const jwt = require("jsonwebtoken");
+const hcaptcha = require("hcaptcha");
 
 const fetchUser = async (req, res, next) => {
   try {
@@ -177,7 +178,7 @@ const userExist = async (req, res, next) => {
 
 const userLogin = async (req, res, next) => {
   try {
-    const { username, password } = req.body;
+    const { username, password, captcha_response } = req.body;
     const user = await UserModel.findOne({
       username,
       status: USER_STATUS.ACTIVE,
@@ -214,6 +215,20 @@ const userLogin = async (req, res, next) => {
 
     if (!bcrypt.compareSync(password, user.password)) {
       return res.json({ status: 400 });
+    }
+
+    if (captcha_response) {
+      const captcha_verification = await hcaptcha.verify(
+        process.env.HCAPTCHA_SECRET_KEY,
+        captcha_response
+      );
+
+      if (!captcha_verification.success) {
+        return res.json({
+          status: 401,
+          messages: ["Captcha verification failed"],
+        });
+      }
     }
 
     // await user.populate({
@@ -328,7 +343,23 @@ const userLoginAdmin = async (req, res, next) => {
 
 const userRegister = async (req, res, next) => {
   try {
-    const { username, password, firstName, lastName, email } = req.body;
+    const { username, password, firstName, lastName, email, captcha_response } =
+      req.body;
+
+    if (captcha_response) {
+      const captcha_verification = await hcaptcha.verify(
+        process.env.HCAPTCHA_SECRET_KEY,
+        captcha_response
+      );
+
+      if (!captcha_verification.success) {
+        return res.json({
+          status: 401,
+          messages: ["Captcha verification failed"],
+        });
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const userRole = await RoleModel.findOne({ name: "user" });
 
@@ -609,7 +640,7 @@ const userVerifyEmail = async (req, res, next) => {
 };
 
 const userLoginGoogle = async (req, res, next) => {
-const user = req.user;
+  const user = req.user;
   const { accessToken, refreshToken, accessTokenExp, refreshTokenExp } =
     await generateTokens(user);
   setTokenCookies(
@@ -624,17 +655,17 @@ const user = req.user;
 
 const userLoginFacebook = async (req, res, next) => {
   const user = req.user;
-    const { accessToken, refreshToken, accessTokenExp, refreshTokenExp } =
-      await generateTokens(user);
-    setTokenCookies(
-      res,
-      accessToken,
-      refreshToken,
-      accessTokenExp,
-      refreshTokenExp
-    );
-    return res.redirect(req.authInfo.state.redirect_uri);
-  };
+  const { accessToken, refreshToken, accessTokenExp, refreshTokenExp } =
+    await generateTokens(user);
+  setTokenCookies(
+    res,
+    accessToken,
+    refreshToken,
+    accessTokenExp,
+    refreshTokenExp
+  );
+  return res.redirect(req.authInfo.state.redirect_uri);
+};
 
 // const getAccessToken = async (req, res, next) => {
 //   const {
