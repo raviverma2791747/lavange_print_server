@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const { getCartPopulated } = require("../../helper/cart");
 const { validateCoupon } = require("../../helper/coupon");
+const { ServerConfigModel } = require("../../models/config");
 
 const getUserCheckout = async (req, res, next) => {
   try {
@@ -35,6 +36,9 @@ const getUserCheckout = async (req, res, next) => {
     }
     const grandTotal = cartTotal - discount;
 
+    const serverConfig = await ServerConfigModel.findOne({ name: "server" });
+
+
     return res.json({
       status: 200,
       data: {
@@ -42,7 +46,10 @@ const getUserCheckout = async (req, res, next) => {
         discount,
         grandTotal,
         couponValid,
-        couponMessage
+        couponMessage,
+        paymentMethod: {
+          paymentGateways: serverConfig?.paymentGateways ?? [],
+        }
       },
     });
   } catch (error) {

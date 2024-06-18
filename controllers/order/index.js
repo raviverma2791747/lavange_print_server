@@ -9,15 +9,18 @@ const { assetUrl, getByValue } = require("../../helper/utils");
 const { getCartPopulated } = require("../../helper/cart");
 const { validateCoupon } = require("../../helper/coupon");
 const CouponModel = require("../../models/coupon");
-const { ORDER_STATUS, PAYMENT_STATUS } = require("../../helper/constants");
+const {
+  ORDER_STATUS,
+  PAYMENT_STATUS,
+  PAYMENT_GATEWAY,
+} = require("../../helper/constants");
+const phonepe = require("../../helper/payment_gateway/phonepe");
 
 dotenv.config();
 
-
-
 const ORDER_MESSAGE = {
   //write message for each status
-  PENDING: "Your order has been placed.",
+  PENDING: "Your order is pending for payment.",
   PLACED: "Your order has been placed.",
   PREPARED: "Your order has been prepared.",
   DISPATCHED: "Your order has been dispatched.",
@@ -101,8 +104,6 @@ const updateOrderStatus = async (req, res, next) => {
         status: newOrder.status,
         message: ORDER_MESSAGE[getByValue(newOrder.status)],
       });
-
-      console.log(newOrder.timeline);
     }
 
     await newOrder.save();
@@ -184,8 +185,10 @@ const createUserOrder = async (req, res, next) => {
     let user = await UserModel.findById(req.user.userId);
     let items = await getCartPopulated(req.body.items);
     let address = user.addresses.id(req.body.address);
+    let redirectUrl = req.body.redirectUrl;
     let coupon_code = req.body.coupon_code;
     let discount = 0;
+    let paymentMethod = req.body.paymentMethod;
     let coupon;
     if (coupon_code) {
       const vc = await validateCoupon(coupon_code, items, user._id);
@@ -234,15 +237,14 @@ const createUserOrder = async (req, res, next) => {
       total: grandTotal,
     });
 
-    //emulate successful order
-    order.status = ORDER_STATUS.PLACED;
+    order.status = ORDER_STATUS.PENDING;
 
     order.timeline.push({
-      status: ORDER_STATUS.PLACED,
-      message: ORDER_MESSAGE.PLACED,
+      status: ORDER_STATUS.PENDING,
+      message: ORDER_MESSAGE.PENDING,
     });
 
-    order.paymentStatus = PAYMENT_STATUS.SUCCESS;
+    // order.paymentStatus = PAYMENT_STATUS.SUCCESS;
 
     await order.save();
 
@@ -280,21 +282,158 @@ const createUserOrder = async (req, res, next) => {
     //   }
     // });
 
-    //let user = await UserModel.findById(req.user.userId);
-    user.cart = [];
-    await user.save();
+    if (paymentMethod === PAYMENT_GATEWAY.PHONEPE) {
+      order.paymentGateway = PAYMENT_GATEWAY.PHONEPE;
+      await order.save();
+      const phonepeResponse = await phonepe.initiatePayment({
+        transactionId: order._id,
+        userId: user._id,
+        amount: grandTotal,
+        mobile: address.mobile,
+        redirectMode: phonepe.REDIRECT_MODE.POST,
+        redirectUrl: `${process.env.PHONEPE_CALLBACK_URL}?redirectUrl=${redirectUrl}`,
+        callbackUrl: `${process.env.PHONEPE_CALLBACK_URL}?redirectUrl=${redirectUrl}`,
+      });
 
-    return res.json({
-      status: 200,
-      data: {
-        order: {
-          id: order._id,
+      if (
+        phonepeResponse.success &&
+        phonepeResponse.code === phonepe.PAY_API_RESPONSE_CODE.PAYMENT_INITIATED
+      ) {
+        const paymentUrl =
+          phonepeResponse.data.instrumentResponse.redirectInfo.url;
+
+        return res.json({
+          status: 200,
+          data: {
+            order: {
+              id: order._id,
+            },
+            paymentGateway: PAYMENT_GATEWAY.PHONEPE,
+            paymentUrl: paymentUrl,
+          },
+        });
+      } else {
+        order.status = ORDER_STATUS.CANCELLED;
+        order.paymentStatus = PAYMENT_STATUS.FAILED;
+        order.timeline.push({
+          status: ORDER_STATUS.CANCELLED,
+          message: ORDER_MESSAGE.CANCELLED,
+        });
+        await order.save();
+        return res.json({
+          status: 500,
+          data: {
+            order: {
+              id: order._id,
+            },
+          },
+        });
+      }
+    } else if (paymentMethod === PAYMENT_GATEWAY.RAZORPAY) {
+    } else {
+      order.status = ORDER_STATUS.CANCELLED;
+      order.paymentStatus = PAYMENT_STATUS.FAILED;
+      order.timeline.push({
+        status: ORDER_STATUS.CANCELLED,
+        message: ORDER_MESSAGE.CANCELLED,
+      });
+      await order.save();
+      return res.json({
+        status: 500,
+        data: {
+          order: {
+            id: order._id,
+          },
         },
-      },
-    });
+        messages: ["No payment method selected"],
+      });
+    }
   } catch (error) {
     next(error);
   }
+};
+
+const phonepeCallback = async (req, res, next) => {
+  const code = req.body.code;
+  const merchantId = req.body.merchantId;
+  const amount = req.body.amount;
+  const transactionId = req.body.transactionId;
+  const redirectUrl = req.query.redirectUrl;
+  const providerReferenceId = req.body.providerReferenceId;
+
+  console.log("Phonepe callback: ", req.body);
+
+  const order = await OrderModel.findOne({
+    _id: transactionId,
+  });
+
+  const responseStatus = await phonepe.checkStatus({
+    merchantTransactionId: transactionId,
+  });
+
+  console.log("Response status: ", responseStatus);
+
+  if (
+    responseStatus.success &&
+    responseStatus.code === phonepe.STATUS_API_RESPONSE_CODE.PAYMENT_SUCCESS
+  ) {
+    order.paymentStatus = PAYMENT_STATUS.SUCCESS;
+    order.status = ORDER_STATUS.PLACED;
+    order.timeline.push({
+      status: ORDER_STATUS.PLACED,
+      message: ORDER_MESSAGE.PLACED,
+    });
+    order.transactionId = responseStatus.data.transactionId;
+    await order.save();
+
+    let user = await UserModel.findById(order.user);
+    user.cart = [];
+    await user.save();
+
+    return res.redirect(`${redirectUrl}/success/${order._id}`);
+  } else {
+    order.paymentStatus = PAYMENT_STATUS.FAILED;
+    order.status = ORDER_STATUS.CANCELLED;
+    order.timeline.push({
+      status: ORDER_STATUS.CANCELLED,
+      message: ORDER_MESSAGE.CANCELLED,
+    });
+    await order.save();
+    return res.redirect(`${redirectUrl}/failure/${order._id}`);
+  }
+
+  //Server to server callback
+  // console.log("decoded", phonepe.decodeBase64(req.body.response));
+  // const responseString = phonepe.decodeBase64(req.body.response);
+  // const response = JSON.parse(responseString);
+  // if (
+  //   response.success &&
+  //   response.code === phonepe.CALLBACK_API_RESPONSE_CODE.PAYMENT_SUCCESS
+  // ) {
+  //   const merchantTransactionId = response.data.merchantTransactionId;
+  //   console.log("merchantTransactionId: ", merchantTransactionId);
+  //   const order = await OrderModel.findOne({
+  //     _id: merchantTransactionId,
+  //   });
+  //   if (order) {
+  //     order.paymentStatus = PAYMENT_STATUS.SUCCESS;
+  //     order.status = ORDER_STATUS.PLACED;
+  //     order.timeline.push({
+  //       status: ORDER_STATUS.PLACED,
+  //       message: ORDER_MESSAGE.PLACED,
+  //     });
+  //     await order.save();
+
+  //     return res.json({
+  //       status: 200,
+  //       data: {
+  //         order: {
+  //           id: order._id,
+  //         },
+  //       },
+  //     });
+  //   }
+  // }
 };
 
 module.exports = {
@@ -306,4 +445,5 @@ module.exports = {
   createUserOrder,
   fetchOrder,
   getOrder,
+  phonepeCallback,
 };

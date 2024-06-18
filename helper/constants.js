@@ -21,10 +21,10 @@ const USER_STATUS = Object.freeze({
 });
 
 const FACET_TYPE = Object.freeze({
-  COLOR: 0,
+  OTHER: 0,
   SIZE: 1,
   MATERIAL: 2,
-  OTHER: 3,
+  COLOR: 3,
 });
 
 const ADDRESS_TYPE = Object.freeze({
@@ -55,10 +55,10 @@ const PAYMENT_STATUS = Object.freeze({
 });
 
 const PAYMENT_GATEWAY = Object.freeze({
-  PAYTM: 0,
+  NONE: 0,
   PHONEPE: 1,
   RAZORPAY: 2,
-  NONE: 3,
+  PAYTM: 3,
 });
 
 const SHIPPING_VENDOR = Object.freeze({
@@ -71,7 +71,7 @@ const SHIPPING_VENDOR = Object.freeze({
 });
 
 const PAYMENT_MODE = Object.freeze({
-  COD: 0,
+  OFFLINE: 0,
   ONLINE: 1,
 });
 

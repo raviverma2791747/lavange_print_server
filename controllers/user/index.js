@@ -73,6 +73,8 @@ const getUser = async (req, res, next) => {
       //   select: "_id name",
       // })
       .lean();
+    
+    
 
     // User.assets = User.assets.map((asset) => {
     //   return {

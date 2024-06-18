@@ -2,55 +2,44 @@ const dotenv = require("dotenv");
 const { assetUrl } = require("../../helper/utils");
 const fs = require("fs");
 const ImageModel = require("../../models/image");
-const { S3Client } = require("@aws-sdk/client-s3");
+const { s3, storage } = require("../../config/multerConfig");
 
 dotenv.config();
 
-const s3 = new S3Client({
-  region: process.env.AWS_REGION,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  },
-});
-
 const createImage = async (req, res, next) => {
-  try {
-    if (!req.file) {
-      return res.json({
-        status: 500,
-        data: {},
-      });
-    }
-
-    let filename;
-    let url;
-
-    if (process.env.NODE_ENV === "production") {
-      filename = req.file.key;
-      url = req.file.location;
-    } else {
-      filename = req.file.filename;
-      url = assetUrl(req.file.filename);
-    }
-
-    const id = filename;
-    const title = req.body.title || "";
-
-    const image = await ImageModel.create({
-      _id: id,
-      title: title,
-    });
-
+  if (!req.file) {
     return res.json({
-      status: 200,
-      data: {
-        image: image,
-      },
+      status: 500,
+      data: {},
     });
-  } catch (error) {
-    next(error);
   }
+  let filename;
+  let url;
+  if (
+    process.env.NODE_ENV === "production" &&
+    process.env.MEDIA_LOCAL === "false"
+  ) {
+    filename = req.file.key;
+    url = req.file.location;
+  } else {
+    filename = req.file.filename;
+    url = assetUrl(req.file.filename);
+  }
+
+  const id = filename;
+  const title = req.body.title || "";
+
+  const image = await ImageModel.create({
+    _id: id,
+    title: title,
+  });
+
+  return res.json({
+    status: 200,
+    data: {
+      image: image,
+    },
+  });
 };
 const updateImage = async (req, res, next) => {
   try {
