@@ -4,6 +4,7 @@ const {
   PAYMENT_MODE,
   PAYMENT_GATEWAY,
   SHIPPING_VENDOR,
+  ADDRESS_TYPE,
 } = require("../../helper/constants");
 
 const updateOrderStatusSchema = {
@@ -68,7 +69,7 @@ const updateOrderShippingSchema = {
         state: { type: "string" },
         country: { type: "string" },
         pincode: { type: "number" },
-        type: { type: "string" },
+        type: { type: "number",  enum: Object.values(ADDRESS_TYPE) },
       },
     },
   },

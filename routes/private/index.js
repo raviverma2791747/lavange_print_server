@@ -1,5 +1,4 @@
 const express = require("express");
-const multer = require("multer");
 const mongoose = require("mongoose");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
@@ -91,8 +90,6 @@ const {
 const { updateRole, getRole, fetchRole } = require("../../controllers/role");
 const { fetchRight } = require("../../controllers/right");
 const admin = require("../../middlewares/admin");
-const { S3Client } = require("@aws-sdk/client-s3");
-const multerS3 = require("multer-s3");
 const dotenv = require("dotenv");
 const {
   updateOrderStatusSchema,
@@ -108,69 +105,12 @@ const {
   getFacet,
   updateFacet,
 } = require("../../controllers/facets");
-
+const {
+  getServerConfig,
+  updateServerConfig,
+} = require("../../controllers/serverConfig");
+const { upload } = require("../../config/multerConfig");
 dotenv.config();
-
-// // Configure Multer for image uploads
-var storage;
-var s3;
-
-if (process.env.NODE_ENV === "production" && !process.env.MEDIA_LOCAL) {
-  s3 = new S3Client({
-    region: process.env.AWS_REGION,
-    credentials: {
-      accessKeyId: process.env.AWS_ACCESS_KEY,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    },
-  });
-
-  storage = multerS3({
-    s3: s3,
-    bucket: process.env.AWS_S3_BUCKET,
-    contentType: multerS3.AUTO_CONTENT_TYPE,
-    metadata: function (req, file, cb) {
-      cb(null, { fieldName: file.fieldname });
-    },
-    key: function (req, file, cb) {
-      cb(
-        null,
-        `image-${new mongoose.Types.ObjectId().toString()}${path.extname(
-          file.originalname
-        )}`
-      );
-    },
-  });
-} else {
-  storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-      cb(null, `${process.env.MEDIA_PATH}/`); // Specify the upload directory
-    },
-    filename: (req, file, cb) => {
-      cb(
-        null,
-        `image-${new mongoose.Types.ObjectId().toString()}${path.extname(
-          file.originalname
-        )}`
-      ); // Use original filename
-    },
-  });
-}
-
-const upload = multer({
-  storage: storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024, // limit file size to 5MB
-  },
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
-    if (allowedTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error("Only images are allowed"));
-    }
-  },
-});
-
 const router = express.Router();
 
 //Announcement
@@ -201,7 +141,7 @@ router.post(
   authenticate,
   admin,
   upload.single("img"),
-  createImage
+  asyncHandler(createImage)
 );
 router.post("/image", authenticate, admin, updateImage);
 router.get("/image/:id", authenticate, admin, getImage);
@@ -332,5 +272,9 @@ router.get("/facet", authenticate, admin, asyncHandler(fetchFacet));
 router.get("/facet/:id", authenticate, admin, asyncHandler(getFacet));
 router.post("/facet", authenticate, admin, asyncHandler(updateFacet));
 //User Routes
+
+//Server Configs
+router.get("/config/server", authenticate, admin, getServerConfig);
+router.post("/config/server", authenticate, admin, updateServerConfig);
 
 module.exports = router;

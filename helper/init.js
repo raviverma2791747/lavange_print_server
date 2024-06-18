@@ -1,6 +1,10 @@
 const mongoose = require("mongoose");
-const { HomeConfigModel, PolicyConfigModel } = require("../models/config");
-const { STATUS, USER_STATUS } = require("./constants");
+const {
+  HomeConfigModel,
+  PolicyConfigModel,
+  ServerConfigModel,
+} = require("../models/config");
+const { STATUS, USER_STATUS, PAYMENT_GATEWAY } = require("./constants");
 const RoleModel = require("../models/role");
 const RightType = require("../models/right");
 const UserModel = require("../models/user");
@@ -158,7 +162,31 @@ const initPolicyConfig = async () => {
   }
 };
 
+const initServerConfig = async () => {
+  try {
+    const serverConfig = await ServerConfigModel.findOne();
+    if (!serverConfig) {
+      await ServerConfigModel.create({
+        status: STATUS.ACTIVE,
+        name: "server",
+        paymentGateways: Object.entries(PAYMENT_GATEWAY).map(([key, value]) => ({
+          name: key,
+          code: value,
+          status: false,
+        })),
+      });
+      console.log("Server config created");
+      return;
+    }
+    console.log("Server config already exists");
+  } catch (error) {
+    console.log("Server config creation failed!");
+    console.log(error);
+  }
+};
+
 const init = async () => {
+  await initServerConfig();
   await initUserRole();
   await initOwnerRole();
   await initMasterUser();

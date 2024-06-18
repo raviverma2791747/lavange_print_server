@@ -96,11 +96,45 @@ const policyConfigSchema = new mongoose.Schema(
 );
 policyConfigSchema.plugin(mongooseLeanVirtuals);
 
+const serverConfigSchema = new mongoose.Schema(
+  {
+    paymentGateways: [
+      {
+        name: {
+          type: mongoose.SchemaTypes.String,
+          required: true,
+        },
+        code: {
+          type: mongoose.SchemaTypes.Number,
+          unique: true,
+          required: true,
+        },
+        status: {
+          type: mongoose.SchemaTypes.Boolean,
+          default: false,
+          required: true,
+        },
+      },
+    ],
+  },
+  { timestamps: true }
+);
+serverConfigSchema.plugin(mongooseLeanVirtuals);
+
 const ConfigModel = mongoose.model("config", configSchema);
 const HomeConfigModel = ConfigModel.discriminator("home", homeConfigSchema);
 const PolicyConfigModel = ConfigModel.discriminator(
   "policy",
   policyConfigSchema
 );
+const ServerConfigModel = ConfigModel.discriminator(
+  "server",
+  serverConfigSchema
+);
 
-module.exports = { ConfigModel, HomeConfigModel, PolicyConfigModel };
+module.exports = {
+  ConfigModel,
+  HomeConfigModel,
+  PolicyConfigModel,
+  ServerConfigModel,
+};

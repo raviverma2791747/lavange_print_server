@@ -28,7 +28,7 @@ const app = express();
 app.set("env", process.env.NODE_ENV || "development");
 app.set("trust proxy", true);
 
-connectDB(process.env.MONGO_URI,process.env.DB_NAME);
+connectDB(process.env.MONGO_URI, process.env.DB_NAME);
 
 const allowedOrigins = process.env.CORS_ALLOWED_ORIGINS.split(",");
 console.log("Allowed Origins: ",allowedOrigins);
@@ -41,10 +41,12 @@ if (app.get("env") == "production") {
     })
   );
 } else {
-  app.use(cors({
-    credentials: true,
-    origin: true
-  }));
+  app.use(
+    cors({
+      credentials: true,
+      origin: true,
+    })
+  );
 }
 
 app.use(
