@@ -40,7 +40,10 @@ require("../../controllers/user/auth/jwt-auth");
 require("../../controllers/user/auth/facebook");
 const jwt = require("jsonwebtoken");
 
-const { phonepeCallback } = require("../../controllers/order");
+const {
+  phonepeCallback,
+  razorpayCallback,
+} = require("../../controllers/order");
 
 const router = express.Router();
 
@@ -99,6 +102,7 @@ router.post(
 
 //Payment Callback Urls
 router.post("/order/payment/callback/phonepe", asyncHandler(phonepeCallback));
+router.post("/order/payment/callback/razorpay", asyncHandler(razorpayCallback));
 
 router.get("/category", fetchUserCategory);
 router.get("/collection", fetchUserCollection);
