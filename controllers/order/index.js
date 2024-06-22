@@ -15,6 +15,8 @@ const {
   PAYMENT_GATEWAY,
 } = require("../../helper/constants");
 const phonepe = require("../../helper/payment_gateway/phonepe");
+const razorpay = require("../../helper/payment_gateway/razorpay");
+const crypto = require("crypto");
 
 dotenv.config();
 
@@ -235,6 +237,7 @@ const createUserOrder = async (req, res, next) => {
       discount: discount,
       coupon: coupon?._id,
       total: grandTotal,
+      paymentGateway: paymentMethod,
     });
 
     order.status = ORDER_STATUS.PENDING;
@@ -283,12 +286,10 @@ const createUserOrder = async (req, res, next) => {
     // });
 
     if (paymentMethod === PAYMENT_GATEWAY.PHONEPE) {
-      order.paymentGateway = PAYMENT_GATEWAY.PHONEPE;
-      await order.save();
       const phonepeResponse = await phonepe.initiatePayment({
         transactionId: order._id,
         userId: user._id,
-        amount: grandTotal,
+        amount: order.total,
         mobile: address.mobile,
         redirectMode: phonepe.REDIRECT_MODE.POST,
         redirectUrl: `${process.env.PHONEPE_CALLBACK_URL}?redirectUrl=${redirectUrl}`,
@@ -330,6 +331,34 @@ const createUserOrder = async (req, res, next) => {
         });
       }
     } else if (paymentMethod === PAYMENT_GATEWAY.RAZORPAY) {
+      const options = {
+        amount: order.total * 100,
+        currency: "INR",
+        receipt: order._id,
+      };
+
+      razorpay.orders.create(options, (error, rzorder) => {
+        if (error) {
+          console.log(error);
+          return res.json({
+            status: 500,
+            data: {},
+            messages: ["Something went wrong"],
+          });
+        } else {
+          return res.json({
+            status: 200,
+            data: {
+              order: {
+                id: order._id,
+              },
+              razorpay_order: rzorder,
+              paymentGateway: PAYMENT_GATEWAY.RAZORPAY,
+              razorpay_id_key: process.env.RAZORPAY_ID_KEY,
+            },
+          });
+        }
+      });
     } else {
       order.status = ORDER_STATUS.CANCELLED;
       order.paymentStatus = PAYMENT_STATUS.FAILED;
@@ -361,8 +390,6 @@ const phonepeCallback = async (req, res, next) => {
   const redirectUrl = req.query.redirectUrl;
   const providerReferenceId = req.body.providerReferenceId;
 
-  console.log("Phonepe callback: ", req.body);
-
   const order = await OrderModel.findOne({
     _id: transactionId,
   });
@@ -370,8 +397,6 @@ const phonepeCallback = async (req, res, next) => {
   const responseStatus = await phonepe.checkStatus({
     merchantTransactionId: transactionId,
   });
-
-  console.log("Response status: ", responseStatus);
 
   if (
     responseStatus.success &&
@@ -436,6 +461,51 @@ const phonepeCallback = async (req, res, next) => {
   // }
 };
 
+const razorpayCallback = async (req, res, next) => {
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
+    req.body;
+
+  const sign = razorpay_order_id + "|" + razorpay_payment_id;
+
+  const expectedSign = crypto
+    .createHmac("sha256", process.env.RAZORPAY_SECRET_KEY)
+    .update(sign.toString())
+    .digest("hex");
+  const isAuthentic = expectedSign === razorpay_signature;
+  const rzorder = await razorpay.orders.fetch(razorpay_order_id);
+  console.log(rzorder);
+  const redirectUrl = req.query.redirectUrl;
+  const order = await OrderModel.findOne({
+    _id: rzorder.receipt,
+  });
+
+  if (isAuthentic && order) {
+    order.paymentStatus = PAYMENT_STATUS.SUCCESS;
+    order.status = ORDER_STATUS.PLACED;
+    order.timeline.push({
+      status: ORDER_STATUS.PLACED,
+      message: ORDER_MESSAGE.PLACED,
+    });
+    order.transactionId = razorpay_payment_id;
+    await order.save();
+
+    let user = await UserModel.findById(order.user);
+    user.cart = [];
+    await user.save();
+
+    return res.redirect(`${redirectUrl}/success/${order._id}`);
+  } else {
+    order.paymentStatus = PAYMENT_STATUS.FAILED;
+    order.status = ORDER_STATUS.CANCELLED;
+    order.timeline.push({
+      status: ORDER_STATUS.CANCELLED,
+      message: ORDER_MESSAGE.CANCELLED,
+    });
+    await order.save();
+    return res.redirect(`${redirectUrl}/failure/${order._id}`);
+  }
+};
+
 module.exports = {
   fetchUserOrder,
   getUserOrder,
@@ -446,4 +516,5 @@ module.exports = {
   fetchOrder,
   getOrder,
   phonepeCallback,
+  razorpayCallback,
 };
