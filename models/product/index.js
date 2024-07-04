@@ -43,6 +43,9 @@ const productSchema = new mongoose.Schema(
       type: mongoose.SchemaTypes.Boolean,
       default: false,
     },
+    hsnCode: {
+      type: mongoose.SchemaTypes.String,
+    },
     hasSKU: {
       type: mongoose.SchemaTypes.Boolean,
       default: false,

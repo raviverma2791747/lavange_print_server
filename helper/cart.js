@@ -35,6 +35,7 @@ const getCartPopulated = async (cart) => {
         variantSchema: ci.variantSchema,
         price: price,
         compareAtPrice: compareAtPrice,
+        _id: ci._id,
       };
     })
   );

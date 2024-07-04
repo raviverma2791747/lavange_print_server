@@ -20,6 +20,7 @@ const { init } = require("./helper/init");
 const fs = require("fs");
 const errorHandler = require("./middlewares/errorHandler.js");
 const session = require("express-session");
+const throttle = require("./middlewares/throttle.js");
 
 dotenv.config();
 
@@ -62,6 +63,7 @@ app.use(passport.initialize());
 app.use(cookieParser());
 app.use(require("express-status-monitor")());
 app.use("/media", express.static(path.join(__dirname, process.env.MEDIA_PATH)));
+//app.use(throttle);
 
 if (app.get("env") == "production") {
   var accessLogStream = fs.createWriteStream(

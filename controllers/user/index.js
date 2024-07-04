@@ -201,7 +201,7 @@ const userLogin = async (req, res, next) => {
     // }
 
     if (!user) {
-      return res.json({ status: 400 });
+      return res.json({ status: 400});
     }
 
     // const newActivity = new ActivityModel({
@@ -216,7 +216,7 @@ const userLogin = async (req, res, next) => {
     // await newActivity.save();
 
     if (!bcrypt.compareSync(password, user.password)) {
-      return res.json({ status: 400 });
+      return res.json({ status: 400, messages: ["Invalid credentials"] });
     }
 
     if (captcha_response) {
@@ -372,6 +372,7 @@ const userRegister = async (req, res, next) => {
       email,
       password: hashedPassword,
       role: userRole._id,
+      status: USER_STATUS.ACTIVE,
     });
     await user.save();
     res.json({ status: 200, data: { msg: "User registered successfully" } });

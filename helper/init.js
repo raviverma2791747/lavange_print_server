@@ -3,6 +3,7 @@ const {
   HomeConfigModel,
   PolicyConfigModel,
   ServerConfigModel,
+  HelpConfigModel,
 } = require("../models/config");
 const { STATUS, USER_STATUS, PAYMENT_GATEWAY } = require("./constants");
 const RoleModel = require("../models/role");
@@ -169,11 +170,13 @@ const initServerConfig = async () => {
       await ServerConfigModel.create({
         status: STATUS.ACTIVE,
         name: "server",
-        paymentGateways: Object.entries(PAYMENT_GATEWAY).map(([key, value]) => ({
-          name: key,
-          code: value,
-          status: false,
-        })),
+        paymentGateways: Object.entries(PAYMENT_GATEWAY).map(
+          ([key, value]) => ({
+            name: key,
+            code: value,
+            status: false,
+          })
+        ),
       });
       console.log("Server config created");
       return;
@@ -185,6 +188,24 @@ const initServerConfig = async () => {
   }
 };
 
+const initHelpConfig = async () => {
+  try {
+    const helpConfig = await HelpConfigModel.findOne();
+    if (!helpConfig) {
+      await HelpConfigModel.create({
+        status: STATUS.ACTIVE,
+        name: "help",
+      });
+      console.log("Help config created");
+      return;
+    }
+    console.log("Help config already exists");
+  } catch (error) {
+    console.log("Help config creation failed!");
+    console.log(error);
+  }
+};
+
 const init = async () => {
   await initServerConfig();
   await initUserRole();
@@ -192,6 +213,7 @@ const init = async () => {
   await initMasterUser();
   await initHomeConfig();
   await initPolicyConfig();
+  await initHelpConfig();
 };
 
 module.exports = {

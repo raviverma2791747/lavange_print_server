@@ -44,6 +44,10 @@ const {
   phonepeCallback,
   razorpayCallback,
 } = require("../../controllers/order");
+const {
+  getHelpConfig,
+  updateHelpConfig,
+} = require("../../controllers/helpConfig");
 
 const router = express.Router();
 
@@ -112,7 +116,8 @@ router.get("/collection/slug/:slug", getUserCollectionSlug);
 router.get("/category/:id", getUserCategory);
 router.get("/category/slug/:slug", getUserCategorySlug);
 router.get("/filters", getSearchFilters);
-router.post("/coupon/apply", applyCoupon);
-router.post("/checkout", getUserCheckout);
+
+router.get("/config/help", asyncHandler(getHelpConfig));
+router.post("/config/help", asyncHandler(updateHelpConfig));
 
 module.exports = router;
