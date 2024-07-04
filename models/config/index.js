@@ -121,6 +121,35 @@ const serverConfigSchema = new mongoose.Schema(
 );
 serverConfigSchema.plugin(mongooseLeanVirtuals);
 
+const helpConfigSchema = new mongoose.Schema(
+  {
+    topics: [
+      {
+        title: {
+          type: mongoose.SchemaTypes.String,
+          required: true,
+        },
+        faqs: [
+          {
+            question: {
+              type: mongoose.SchemaTypes.String,
+              required: true,
+            },
+            answer: {
+              type: mongoose.SchemaTypes.String,
+              required: true,
+            },
+          },
+        ],
+      },
+    ],
+  },
+  {
+    timestamps: true,
+  }
+);
+helpConfigSchema.plugin(mongooseLeanVirtuals);
+
 const ConfigModel = mongoose.model("config", configSchema);
 const HomeConfigModel = ConfigModel.discriminator("home", homeConfigSchema);
 const PolicyConfigModel = ConfigModel.discriminator(
@@ -131,10 +160,12 @@ const ServerConfigModel = ConfigModel.discriminator(
   "server",
   serverConfigSchema
 );
+const HelpConfigModel = ConfigModel.discriminator("help", helpConfigSchema);
 
 module.exports = {
   ConfigModel,
   HomeConfigModel,
   PolicyConfigModel,
   ServerConfigModel,
+  HelpConfigModel,
 };

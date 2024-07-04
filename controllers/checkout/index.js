@@ -2,11 +2,23 @@ const mongoose = require("mongoose");
 const { getCartPopulated } = require("../../helper/cart");
 const { validateCoupon } = require("../../helper/coupon");
 const { ServerConfigModel } = require("../../models/config");
+const UserModel = require("../../models/user");
 
 const getUserCheckout = async (req, res, next) => {
   try {
-    const userID = req.body.userID;
-    const cart = req.body.cart;
+    const userID = req.user.userId;
+    const user = await UserModel.findById(userID).populate({
+      path: "cart",
+      populate: {
+        path: "product",
+        populate: {
+          path: "assets",
+          // select: "_id url title ",
+        },
+      },
+    }).lean();
+     console.log(user.cart);
+    const cart = user.cart;
     const coupon_code = req.body.coupon_code;
 
     const cartp = await getCartPopulated(cart);
@@ -28,20 +40,19 @@ const getUserCheckout = async (req, res, next) => {
 
     const vc = await validateCoupon(coupon_code, cartp, userID);
 
-    console.log(vc);
     if (vc.status === 200) {
       discount = vc.data.discount;
       couponValid = true;
-      couponMessage = vc.data.error
+      couponMessage = vc.data.error;
     }
     const grandTotal = cartTotal - discount;
 
     const serverConfig = await ServerConfigModel.findOne({ name: "server" });
 
-
     return res.json({
       status: 200,
       data: {
+        cart: cartp,
         cartTotal,
         discount,
         grandTotal,
@@ -49,7 +60,7 @@ const getUserCheckout = async (req, res, next) => {
         couponMessage,
         paymentMethod: {
           paymentGateways: serverConfig?.paymentGateways ?? [],
-        }
+        },
       },
     });
   } catch (error) {

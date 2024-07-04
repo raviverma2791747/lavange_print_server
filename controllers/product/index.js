@@ -97,6 +97,8 @@ const updateProduct = async (req, res, next) => {
 
 const fetchUserProduct = async (req, res, next) => {
   const filter = { status: STATUS.ACTIVE };
+  const page = req.query.page ?? 1;
+  const limit = req.query.limit ?? 10;
 
   filter["title"] = {
     $regex: req.query.search ?? "",
@@ -153,8 +155,16 @@ const fetchUserProduct = async (req, res, next) => {
     .select(
       "-shippingWeight -isDigitalProduct -hasSKU -barcode -tags -trackQuantity -inventoryQuantity"
     )
+    .populate({
+      path: "variantConfigs.variants.assets",
+      select: "_id url title",
+    })
     .sort(sort)
+    .skip((page - 1) * limit)
+    .limit(limit)
     .lean({ virtuals: true });
+
+  const total = await ProductModel.find(filter).countDocuments();
 
   products.forEach((product) => {
     delete product.variantConfigs;
@@ -297,6 +307,9 @@ const fetchUserProduct = async (req, res, next) => {
     status: 200,
     data: {
       products: products,
+      total: total,
+      limit: limit,
+      page: page,
     },
   });
 };
@@ -415,10 +428,14 @@ const getUserProduct = async (req, res, next) => {
       .select(
         "-shippingWeight -isDigitalProduct -hasSKU -barcode -tags -trackQuantity -inventoryQuantity"
       )
+      .populate({
+        path: "variantConfigs.variants.assets",
+        select: "_id url title",
+      })
       .lean({ virtuals: true });
-    
+
     if (product) {
-       delete product.variantConfigs;
+      delete product.variantConfigs;
     }
 
     return res.json({

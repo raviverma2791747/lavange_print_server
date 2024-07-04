@@ -86,6 +86,7 @@ const {
   getCoupon,
   fetchCoupon,
   updateCoupon,
+  applyCoupon,
 } = require("../../controllers/coupon");
 const { updateRole, getRole, fetchRole } = require("../../controllers/role");
 const { fetchRight } = require("../../controllers/right");
@@ -110,6 +111,7 @@ const {
   updateServerConfig,
 } = require("../../controllers/serverConfig");
 const { upload } = require("../../config/multerConfig");
+const { getUserCheckout } = require("../../controllers/checkout");
 dotenv.config();
 const router = express.Router();
 
@@ -276,5 +278,8 @@ router.post("/facet", authenticate, admin, asyncHandler(updateFacet));
 //Server Configs
 router.get("/config/server", authenticate, admin, getServerConfig);
 router.post("/config/server", authenticate, admin, updateServerConfig);
+
+router.post("/coupon/apply", authenticate, applyCoupon);
+router.post("/checkout",authenticate, getUserCheckout);
 
 module.exports = router;
