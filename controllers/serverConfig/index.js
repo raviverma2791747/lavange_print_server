@@ -1,12 +1,7 @@
 const mongoose = require("mongoose");
 const { ServerConfigModel } = require("../../models/config");
-const dotenv = require("dotenv");
-const { assetUrl } = require("../../helper/utils");
-const { STATUS } = require("../../helper/constants");
 
-dotenv.config();
-
-const getServerConfig = async (req, res, next) => {
+const getServerConfig = async (req, res) => {
   const serverConfig = await ServerConfigModel.findOne();
   return res.json({
     status: 200,
@@ -16,13 +11,15 @@ const getServerConfig = async (req, res, next) => {
   });
 };
 
-const updateServerConfig = async (req, res, next) => {
-  const _id = req.body._id ?? new mongoose.Types.ObjectId();
+const updateServerConfig = async (req, res) => {
+  const serverConfigId = req.body._id ?? new mongoose.Types.ObjectId();
+  const data = req.body;
+
   const serverConfig = await ServerConfigModel.updateOne(
     {
-      _id: _id,
+      _id: serverConfigId,
     },
-    req.body,
+    data,
     {
       upsert: true,
       new: true,
@@ -32,7 +29,7 @@ const updateServerConfig = async (req, res, next) => {
     status: 200,
     data: {
       serverConfig: {
-        id: _id,
+        id: serverConfigId,
       },
     },
   });

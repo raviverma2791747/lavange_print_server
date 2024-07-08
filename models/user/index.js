@@ -1,5 +1,33 @@
 const mongoose = require("mongoose");
+const mongooseLeanVirtuals = require("mongoose-lean-virtuals");
 const { STATUS, USER_STATUS, ADDRESS_TYPE } = require("../../helper/constants");
+const ProductModel = require("../product");
+
+const cartSchema = new mongoose.Schema({
+  variant: {
+    type: mongoose.SchemaTypes.ObjectId,
+    default: null,
+  },
+  price: {
+    type: mongoose.SchemaTypes.Number,
+  },
+  quantity: {
+    type: mongoose.SchemaTypes.Number,
+    default: 1,
+  },
+  product: {
+    type: mongoose.SchemaTypes.ObjectId,
+    ref: "product",
+  },
+});
+
+// cartSchema.virtual("isOutOfStock").get(async function () {
+//   const product = await ProductModel.findById(this.product);
+//   if (!product) return true;
+//   const variant = product.variants.id(this.variant);
+//   if (!variant) return true;
+//   return false;
+// });
 
 const userSchema = new mongoose.Schema(
   {
@@ -54,29 +82,7 @@ const userSchema = new mongoose.Schema(
         ref: "coupon",
       },
     ],
-    cart: [
-      {
-        variant: {
-          type: mongoose.SchemaTypes.ObjectId,
-          default: null,
-        },
-        variantSchema: {
-          type: mongoose.SchemaTypes.ObjectId,
-          default: null,
-        },
-        price: {
-          type: mongoose.SchemaTypes.Number,
-        },
-        quantity: {
-          type: mongoose.SchemaTypes.Number,
-          default: 1,
-        },
-        product: {
-          type: mongoose.SchemaTypes.ObjectId,
-          ref: "product",
-        },
-      },
-    ],
+    cart: [cartSchema],
     addresses: [
       {
         status: {
@@ -130,6 +136,11 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+userSchema.set("toObject", { virtuals: true });
+userSchema.set("toJSON", { virtuals: true });
+
+userSchema.plugin(mongooseLeanVirtuals);
 
 const UserModel = mongoose.model("user", userSchema);
 

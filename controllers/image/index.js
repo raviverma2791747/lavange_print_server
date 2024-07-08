@@ -1,16 +1,13 @@
-const dotenv = require("dotenv");
 const { assetUrl } = require("../../helper/utils");
 const fs = require("fs");
 const ImageModel = require("../../models/image");
-const { s3, storage } = require("../../config/multerConfig");
+const { s3 } = require("../../config/multerConfig");
 
-dotenv.config();
-
-const createImage = async (req, res, next) => {
+const createImage = async (req, res) => {
   if (!req.file) {
     return res.json({
-      status: 500,
-      data: {},
+      status: 400,
+      messages: ["File not found"],
     });
   }
   let filename;
@@ -26,11 +23,11 @@ const createImage = async (req, res, next) => {
     url = assetUrl(req.file.filename);
   }
 
-  const id = filename;
+  const imageId = filename;
   const title = req.body.title || "";
 
   const image = await ImageModel.create({
-    _id: id,
+    _id: imageId,
     title: title,
   });
 
@@ -41,81 +38,66 @@ const createImage = async (req, res, next) => {
     },
   });
 };
-const updateImage = async (req, res, next) => {
-  try {
-    const title = req.body.title || "";
+const updateImage = async (req, res) => {
+  const title = req.body.title || "";
+  const imageId = req.body.id;
 
-    const image = await ImageModel.updateOne(
-      {
-        _id: req.body.id,
+  const image = await ImageModel.findByIdAndUpdate(imageId, {
+    title: title,
+  });
+
+  return res.json({
+    status: 200,
+    data: {
+      image: {
+        id: imageId,
       },
-      {
-        title: title,
-      }
-    );
-
-    return res.json({
-      status: 200,
-      data: {},
-    });
-  } catch (error) {
-    next(error);
-  }
+    },
+  });
 };
 
-const fetchImage = async (req, res, next) => {
-  try {
-    const images = await ImageModel.find();
-    return res.json({
-      status: 200,
-      data: {
-        images,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
+const fetchImage = async (req, res) => {
+  const images = await ImageModel.find();
+  return res.json({
+    status: 200,
+    data: {
+      images,
+    },
+  });
 };
 
-const getImage = async (req, res, next) => {
-  try {
-    const image = await ImageModel.findById(req.params.id);
-    return res.json({
-      status: 200,
-      data: {
-        image,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
+const getImage = async (req, res) => {
+  const imageId = req.params.id;
+  const image = await ImageModel.findById(imageId);
+  return res.json({
+    status: 200,
+    data: {
+      image,
+    },
+  });
 };
 
-const deleteImage = async (req, res, next) => {
-  try {
-    if (process.env.NODE_ENV === "production") {
-      const params = {
-        Bucket: process.env.AWS_S3_BUCKET,
-        Key: req.params.id,
-      };
+const deleteImage = async (req, res) => {
+  if (process.env.NODE_ENV === "production") {
+    const params = {
+      Bucket: process.env.AWS_S3_BUCKET,
+      Key: req.params.id,
+    };
 
-      const response = await s3.deleteObject(params).promise();
-    } else {
-      fs.unlinkSync(`./media/${req.params.id}`);
-    }
-
-    const image = await ImageModel.findByIdAndDelete(req.params.id);
-    return res.json({
-      status: 200,
-      data: {
-        image: {
-          id: req.params.id,
-        },
-      },
-    });
-  } catch (error) {
-    next(error);
+    const response = await s3.deleteObject(params).promise();
+  } else {
+    fs.unlinkSync(`./media/${req.params.id}`);
   }
+
+  const image = await ImageModel.findByIdAndDelete(req.params.id);
+  return res.json({
+    status: 200,
+    data: {
+      image: {
+        id: req.params.id,
+      },
+    },
+  });
 };
 
 module.exports = {

@@ -1,10 +1,7 @@
 const mongoose = require("mongoose");
 const { HelpConfigModel } = require("../../models/config");
-const dotenv = require("dotenv");
 
-dotenv.config();
-
-const getHelpConfig = async (req, res, next) => {
+const getHelpConfig = async (req, res) => {
   const helpConfig = await HelpConfigModel.findOne();
   return res.json({
     status: 200,
@@ -15,12 +12,13 @@ const getHelpConfig = async (req, res, next) => {
 };
 
 const updateHelpConfig = async (req, res, next) => {
-  const _id = req.body._id ?? new mongoose.Types.ObjectId();
+  const helpConfigId = req.body._id ?? new mongoose.Types.ObjectId();
+  const payload = req.body;
   const helpConfig = await HelpConfigModel.updateOne(
     {
-      _id: _id,
+      _id: helpConfigId,
     },
-    req.body,
+    payload,
     {
       upsert: true,
       new: true,
@@ -30,7 +28,7 @@ const updateHelpConfig = async (req, res, next) => {
     status: 200,
     data: {
       helpConfig: {
-        id: _id,
+        id: helpConfigId,
       },
     },
   });

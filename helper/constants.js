@@ -75,6 +75,8 @@ const PAYMENT_MODE = Object.freeze({
   ONLINE: 1,
 });
 
+const MAX_CART_ITEM_QUANTITY = 100;
+
 module.exports = {
   STATUS,
   ORDER_STATUS,
@@ -86,5 +88,6 @@ module.exports = {
   PAYMENT_STATUS,
   PAYMENT_GATEWAY,
   PAYMENT_MODE,
-  SHIPPING_VENDOR
+  SHIPPING_VENDOR,
+  MAX_CART_ITEM_QUANTITY
 };

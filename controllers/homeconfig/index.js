@@ -1,135 +1,97 @@
 const mongoose = require("mongoose");
 const { HomeConfigModel } = require("../../models/config");
-const dotenv = require("dotenv");
-const { assetUrl } = require("../../helper/utils");
 const { STATUS } = require("../../helper/constants");
 
-dotenv.config();
-
-// const fetchHomeConfig = async (req,  res, next) => {
-//   const homeConfigs = await HomeConfigModel.find();
-
-//   return res.json({
-//     status: 200,
-//     data: {
-//       homeConfigs,
-//     },
-//   });
-// };
-
-const getHomeConfig = async (req, res, next) => {
-  try {
-    const homeConfig = await HomeConfigModel.findOne();
-    return res.json({
-      status: 200,
-      data: {
-        homeConfig,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
+const getHomeConfig = async (req, res) => {
+  const homeConfig = await HomeConfigModel.findOne();
+  return res.json({
+    status: 200,
+    data: {
+      homeConfig,
+    },
+  });
 };
 
-const updateHomeConfig = async (req, res, next) => {
-  try {
-    const _id = req.body._id ?? new mongoose.Types.ObjectId();
-    const homeConfig = await HomeConfigModel.updateOne(
-      {
-        _id: _id,
+const updateHomeConfig = async (req, res) => {
+  const homeConfigId = req.body._id ?? new mongoose.Types.ObjectId();
+  const homeConfig = await HomeConfigModel.updateOne(
+    {
+      _id: homeConfigId,
+    },
+    req.body,
+    {
+      upsert: true,
+      new: true,
+    }
+  );
+  return res.json({
+    status: 200,
+    data: {
+      homeConfig: {
+        id: homeConfigId,
       },
-      req.body,
-      {
-        upsert: true,
-        new: true,
-      }
-    );
-    return res.json({
-      status: 200,
-      data: {
-        homeConfig: {
-          id: _id,
-        },
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
+    },
+  });
 };
 
-const getHomeConfigPublic = async (req, res, next) => {
-  try {
-    let homeConfig = await HomeConfigModel.findOne()
-      .populate("featuredCategories")
-      .populate({
-        path: "featuredAnnouncements",
-        populate: {
-          path: "asset",
-          select: "_id url title",
-        },
-        match: { status: STATUS.ACTIVE },
-      })
-      .populate({
-        path: "exploreProducts",
-        populate: {
-          path: "assets",
-          select: "_id url title",
-        },
-        match: { status: STATUS.ACTIVE },
-      })
-      .populate({
-        path: "exploreCollections",
-        populate: {
-          path: "asset",
-          select: "_id url title",
-        },
-        match: { status: STATUS.ACTIVE },
-      })
-      .populate({
-        path: "bestSellerProducts",
-        populate: {
-          path: "assets",
-          select: "_id url title",
-        },
-        match: { status: STATUS.ACTIVE },
-      })
-      .populate({
-        path: "newArrivalProducts",
-        populate: {
-          path: "assets",
-          select: "_id url title",
-        },
-        match: { status: STATUS.ACTIVE },
-      })
-      .populate({
-        path: "featuredCollections",
-        match: { status: STATUS.ACTIVE },
-        populate: {
-          path: "products",
-          populate: {
-            path: "assets",
-            select: "_id url title",
-          },
-
-          match: { status: STATUS.ACTIVE },
-        },
-      })
-      .lean({ virtuals: true });
-
-    return res.json({
-      status: 200,
-      data: {
-        homeConfig: homeConfig,
+const getUserHomeConfig = async (req, res) => {
+  const productPopulateOptions = (name) => {
+    return {
+      path: name,
+      populate: {
+        path: "assets",
+        select: "_id url title",
       },
-    });
-  } catch (error) {
-    next(error);
-  }
+      select:
+        "_id status url title slug price variants variantSchema assets price compareAtPrice",
+      match: { status: STATUS.ACTIVE },
+    };
+  };
+  let homeConfig = await HomeConfigModel.findOne()
+    .populate("featuredCategories")
+    .populate({
+      path: "featuredAnnouncements",
+      populate: {
+        path: "asset",
+        select: "_id url title",
+      },
+      match: { status: STATUS.ACTIVE },
+    })
+    .populate(productPopulateOptions("exploreProducts"))
+    .populate({
+      path: "exploreCollections",
+      populate: {
+        path: "asset",
+        select: "_id url title",
+      },
+      match: { status: STATUS.ACTIVE },
+    })
+    .populate(productPopulateOptions("bestSellerProducts"))
+    .populate(productPopulateOptions("newArrivalProducts"))
+    .populate({
+      path: "featuredCollections",
+      match: { status: STATUS.ACTIVE },
+      populate: {
+        path: "products",
+        populate: {
+          path: "assets",
+          select: "_id url title",
+        },
+        match: { status: STATUS.ACTIVE },
+      },
+    })
+    .lean({ virtuals: true });
+
+  return res.json({
+    status: 200,
+    data: {
+      homeConfig: homeConfig,
+    },
+  });
 };
 
 module.exports = {
-  //fetchHomeConfig,
   getHomeConfig,
   updateHomeConfig,
-  getHomeConfigPublic,
+  getUserHomeConfig,
 };

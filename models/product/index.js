@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 const mongooseLeanVirtuals = require("mongoose-lean-virtuals");
-
 const { assetUrl } = require("../../helper/utils");
 const { STATUS, WEIGHT_UNIT, FACET_TYPE } = require("../../helper/constants");
 
@@ -76,90 +75,83 @@ const productSchema = new mongoose.Schema(
         default: WEIGHT_UNIT.KG,
       },
     },
-    productType: {
-      type: mongoose.SchemaTypes.String,
-    },
     assets: [
       {
         type: mongoose.SchemaTypes.String,
         ref: "image",
       },
     ],
-    variantConfigs: [
+    variantSchema: [
       {
-        status: {
-          type: mongoose.SchemaTypes.Number,
-          enum: Object.values(STATUS),
+        displayName: {
+          type: mongoose.SchemaTypes.String,
           required: true,
         },
-        variantSchema: [
+        name: {
+          type: mongoose.SchemaTypes.String,
+          required: true,
+        },
+        type: {
+          type: mongoose.SchemaTypes.Number,
+          enum: Object.values(FACET_TYPE),
+          default: FACET_TYPE.OTHER,
+          required: true,
+        },
+        options: [
           {
             displayName: {
               type: mongoose.SchemaTypes.String,
               required: true,
             },
-            name: {
+            value: {
               type: mongoose.SchemaTypes.String,
               required: true,
             },
-            type: {
+            status: {
               type: mongoose.SchemaTypes.Number,
-              enum: Object.values(FACET_TYPE),
-              default: FACET_TYPE.OTHER,
-              required: true,
+              enum: Object.values(STATUS),
+              default: STATUS.DRAFT,
             },
-            options: [
-              {
-                displayName: {
-                  type: mongoose.SchemaTypes.String,
-                  required: true,
-                },
-                value: {
-                  type: mongoose.SchemaTypes.String,
-                  required: true,
-                },
-                status: {
-                  type: mongoose.SchemaTypes.Number,
-                  enum: Object.values(STATUS),
-                  default: STATUS.DRAFT,
-                },
-              },
-            ],
           },
         ],
-        variants: [
+      },
+    ],
+    variants: [
+      {
+        status: {
+          type: mongoose.SchemaTypes.Number,
+          enum: Object.values(STATUS),
+          default: STATUS.DRAFT,
+        },
+        assets: [
           {
-            assets: [
-              {
-                type: mongoose.SchemaTypes.String,
-                ref: "image",
-              },
-            ],
-            sku: {
-              type: mongoose.SchemaTypes.String,
-              required: true,
-              default: "", // You can set a default value if needed
-            },
-            attributes: {
-              type: mongoose.SchemaTypes.Mixed,
-            },
-            compareAtPrice: {
-              type: mongoose.SchemaTypes.Number,
-              required: true,
-              default: 0, // You can set a default value if needed
-            },
-            price: {
-              type: mongoose.SchemaTypes.Number,
-              required: true,
-              default: 0, // You can set a default value if needed
-            },
-            inventoryQuantity: {
-              type: mongoose.SchemaTypes.Number,
-              required: true,
-              default: 0,
-            },
+            type: mongoose.SchemaTypes.String,
+            ref: "image",
           },
         ],
+        sku: {
+          type: mongoose.SchemaTypes.String,
+          required: true,
+          default: "", // You can set a default value if needed
+        },
+        attributes: {
+          type: mongoose.SchemaTypes.Mixed,
+        },
+        compareAtPrice: {
+          type: mongoose.SchemaTypes.Number,
+          required: true,
+          default: 0, // You can set a default value if needed
+        },
+        price: {
+          type: mongoose.SchemaTypes.Number,
+          required: true,
+          default: 0, // You can set a default value if needed
+        },
+        inventoryQuantity: {
+          type: mongoose.SchemaTypes.Number,
+          required: true,
+          default: 0,
+        },
       },
     ],
     tags: [
@@ -181,68 +173,48 @@ const productSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-
-// productSchema.post("find", function (docs) {
-//   docs.forEach((doc) => {
-//     const v = doc.variantConfigs.find((config) => config.status === STATUS.ACTIVE);
-//     if (v) {
-//       doc.price = v.variants.reduce((min, variant) => {
-//         return variant.price <= min ? variant.price : min;
-//       }, Infinity);
-//     }
-//   });
-// });
-
 productSchema.virtual("maxPrice").get(function () {
-  const v = this.variantConfigs.find(
-    (config) => config.status === STATUS.ACTIVE
-  );
-  if (v) {
-    return v.variants.reduce((max, variant) => {
-      return variant.price >= max ? variant.price : max;
-    }, 0);
+  if (this.variants.length) {
+    return Math.max(...this.variants.map((variant) => variant.price));
   }
   return this.price;
 });
 
 productSchema.virtual("minPrice").get(function () {
-  const v = this.variantConfigs.find(
-    (config) => config.status === STATUS.ACTIVE
-  );
-  if (v) {
-    return v.variants.reduce((min, variant) => {
-      return variant.price <= min ? variant.price : min;
-    }, Infinity);
+  if (this.variants.length) {
+    return Math.min(...this.variants.map((variant) => variant.price));
   }
   return this.price;
 });
 
-productSchema.virtual("variants").get(function () {
-  const v = this.variantConfigs.find(
-    (config) => config.status === STATUS.ACTIVE
-  );
-  if (v) {
-    return v.variants;
+productSchema.virtual("minCompareAtPrice").get(function () {
+  if (this.variants.length) {
+    const variant = this.variants.reduce((a, b) => (a.price > b.price ? a : b));
+    return variant.compareAtPrice;
+  }
+  return this.compareAtPrice;
+});
+
+productSchema.virtual("maxCompareAtPrice").get(function () {
+  if (this.variants.length) {
+    const variant = this.variants.reduce((a, b) => (a.price < b.price ? a : b));
+    return variant.compareAtPrice;
+  }
+  return this.price;
+});
+
+productSchema.virtual("minVariant").get(function () {
+  if (this.variants.length) {
+    const variant = this.variants.reduce((a, b) => (a.price > b.price ? a : b));
+    return variant._id;
   }
   return null;
 });
 
-productSchema.virtual("variantOptions").get(function () {
-  const v = this.variantConfigs.find(
-    (config) => config.status === STATUS.ACTIVE
-  );
-  if (v) {
-    return v.variantSchema;
-  }
-  return null;
-});
-
-productSchema.virtual("schemaId").get(function () {
-  const v = this.variantConfigs.find(
-    (config) => config.status === STATUS.ACTIVE
-  );
-  if (v) {
-    return v._id;
+productSchema.virtual("maxVariant").get(function () {
+  if (this.variants.length) {
+    const variant = this.variants.reduce((a, b) => (a.price < b.price ? a : b));
+    return variant._id;
   }
   return null;
 });

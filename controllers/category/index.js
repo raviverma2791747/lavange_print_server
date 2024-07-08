@@ -2,158 +2,175 @@ const mongoose = require("mongoose");
 const CategoryModel = require("../../models/category");
 const { STATUS } = require("../../helper/constants");
 
-const fetchCategory = async (req, res, next) => {
-  try {
-    const page = parseInt(req.query.page) - 1 || 0;
-    const limit = parseInt(req.query.limit) || 10;
-    const search = req.query.search || "";
+const fetchCategory = async (req, res) => {
+  const filter = {};
+  const status = req.query.status;
+  const page = req.query.page ?? 1;
+  const limit = req.query.limit ?? 10;
 
-    const categories = await CategoryModel.find({
-      name: {
-        $regex: search,
-        $options: "i",
-      },
+  filter["name"] = {
+    $regex: req.query.search ?? "",
+    $options: "i",
+  };
+
+  if (status) {
+    filter["status"] = status;
+  }
+
+  let sort = {};
+
+  if (req.query.sort) {
+    sort[req.query.sort] = req.query.order === "desc" ? -1 : 1;
+  }
+
+  const categories = await CategoryModel.find(filter)
+    .populate({
+      path: "asset",
+      select: "_id url title",
     })
-      .skip(page * limit)
-      .limit(limit);
+    .sort(sort)
+    .skip((page - 1) * limit)
+    .limit(limit)
+    .lean({ virtuals: true });
 
-    return res.json({
-      status: 200,
-      data: {
-        categories,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
+  const total = await CategoryModel.find(filter).countDocuments();
+
+  return res.json({
+    status: 200,
+    data: {
+      categories: categories,
+      total: total,
+      limit: limit,
+      page: page,
+    },
+  });
 };
 
-const getCategory = async (req, res, next) => {
-  try {
-    const category = await CategoryModel.findById({ _id: req.params.id });
-    return res.json({
-      status: 200,
-      data: {
-        category,
-      },
-    });
-  } catch {
-    return res.json({
-      status: 500,
-      data: {},
-    });
-  }
+const getCategory = async (req, res) => {
+  const categoryId = req.params.id;
+  const category = await CategoryModel.findById(categoryId);
+  return res.json({
+    status: 200,
+    data: {
+      category,
+    },
+  });
 };
 
-const updateCategory = async (req, res, next) => {
-  try {
-    const _id = req.body._id ?? new mongoose.Types.ObjectId();
-    const category = await CategoryModel.updateOne(
-      {
-        _id: _id,
+const updateCategory = async (req, res) => {
+  const categoryId = req.body._id ?? new mongoose.Types.ObjectId();
+  const category = await CategoryModel.updateOne(
+    {
+      _id: categoryId,
+    },
+    req.body,
+    {
+      upsert: true,
+      new: true,
+    }
+  );
+  return res.json({
+    status: 200,
+    data: {
+      category: {
+        id: categoryId,
       },
-      req.body,
-      {
-        upsert: true,
-        new: true,
-      }
-    );
-    return res.json({
-      status: 200,
-      data: {
-        category: {
-          id: _id,
-        },
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
+    },
+  });
 };
 
-const getUserCategory = async (req, res, next) => {
-  try {
-    let category = await CategoryModel.findById({
-      _id: req.params.id,
+const getUserCategory = async (req, res) => {
+  const categoryId = req.params.id;
+  const category = await CategoryModel.findById(categoryId)
+    .populate({
+      path: "products",
+      populate: {
+        path: "assets",
+        select: "_id url title",
+      },
+      select:
+        "_id status url title slug price variants variantSchema assets price compareAtPrice",
+      match: { status: STATUS.ACTIVE },
     })
-      .populate({
-        path: "products",
-        populate: {
-          path: "assets",
-          select: "_id url title",
-        },
-        match: { status: STATUS.ACTIVE },
-      })
-      .lean({
-        virtuals: true,
-      });
-
-    return res.json({
-      status: 200,
-      data: {
-        category,
-      },
+    .lean({
+      virtuals: true,
     });
-  } catch (error) {
-    next(error);
-  }
+
+  return res.json({
+    status: 200,
+    data: {
+      category,
+    },
+  });
 };
 
-const getUserCategorySlug = async (req, res, next) => {
-  try {
-    let category = await CategoryModel.findOne({ slug: req.params.slug })
-      .populate({
-        path: "products",
-        match: { status: STATUS.ACTIVE },
-        populate: {
-          path: "assets",
-          select: "_id url title",
-        },
-      })
-      .lean({
-        virtuals: true,
-      });
-
-    return res.json({
-      status: 200,
-      data: {
-        category,
+const getUserCategoryBySlug = async (req, res) => {
+  const slug = req.params.slug;
+  const category = await CategoryModel.findOne({ slug: slug })
+    .populate({
+      path: "products",
+      match: { status: STATUS.ACTIVE },
+      populate: {
+        path: "assets",
+        select: "_id url title",
       },
+      select:
+        "_id status url title slug price variants variantSchema assets price compareAtPrice",
+    })
+    .lean({
+      virtuals: true,
     });
-  } catch (error) {
-    next(error);
-  }
+
+  return res.json({
+    status: 200,
+    data: {
+      category,
+    },
+  });
 };
 
 const fetchUserCategory = async (req, res, next) => {
-  try {
-    const page = parseInt(req.query.page) - 1 || 0;
-    const limit = parseInt(req.query.limit) || 10;
-    const search = req.query.search || "";
+  const filter = {};
+  const status = req.query.status;
+  const page = req.query.page ?? 1;
+  const limit = req.query.limit ?? 10;
 
-    const categories = await CategoryModel.find({
-      name: {
-        $regex: search,
-        $options: "i",
-      },
-    })
-      .skip(page * limit)
-      .limit(limit)
-      .populate({
-        path: "asset",
-        select: "_id url title",
-      })
-      .lean({ virtuals: true });
+  filter["name"] = {
+    $regex: req.query.search ?? "",
+    $options: "i",
+  };
 
-    return res.json({
-      status: 200,
-      data: {
-        categories,
-      },
-    });
-  } catch (error) {
-    next(error);
+  if (status) {
+    filter["status"] = status;
   }
+
+  let sort = {};
+
+  if (req.query.sort) {
+    sort[req.query.sort] = req.query.order === "desc" ? -1 : 1;
+  }
+
+  const categories = await CategoryModel.find(filter)
+    .populate({
+      path: "asset",
+      select: "_id url title",
+    })
+    .sort(sort)
+    .skip((page - 1) * limit)
+    .limit(limit)
+    .lean({ virtuals: true });
+
+  const total = await CategoryModel.find(filter).countDocuments();
+
+  return res.json({
+    status: 200,
+    data: {
+      categories: categories,
+      total: total,
+      limit: limit,
+      page: page,
+    },
+  });
 };
 
 module.exports = {
@@ -161,6 +178,6 @@ module.exports = {
   getCategory,
   updateCategory,
   getUserCategory,
-  getUserCategorySlug,
+  getUserCategoryBySlug,
   fetchUserCategory,
 };

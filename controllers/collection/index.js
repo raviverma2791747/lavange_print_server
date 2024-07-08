@@ -1,155 +1,185 @@
 const mongoose = require("mongoose");
 const CollectionModel = require("../../models/collection");
-const dotenv = require("dotenv");
-const { assetUrl } = require("../../helper/utils");
 const { STATUS } = require("../../helper/constants");
 
-dotenv.config();
+const fetchCollection = async (req, res) => {
+  const filter = {};
+  const status = req.query.status;
+  const page = req.query.page ?? 1;
+  const limit = req.query.limit ?? 10;
 
-const fetchCollection = async (req, res, next) => {
-  try {
-    const { status } = req.query;
+  filter["name"] = {
+    $regex: req.query.search ?? "",
+    $options: "i",
+  };
 
-    let filter = {};
-
-    if (status) {
-      filter["status"] = status;
-    }
-
-    const collections = await CollectionModel.find(filter);
-    return res.json({
-      status: 200,
-      data: {
-        collections,
-      },
-    });
-  } catch (error) {
-    next(error);
+  if (status) {
+    filter["status"] = status;
   }
-};
 
-const getCollection = async (req, res, next) => {
-  try {
-    let collection = await CollectionModel.findById({ _id: req.params.id })
-      .populate({
-        path: "products",
-        match: { status: STATUS.ACTIVE },
-        populate: {
-          path: "assets",
-          select: "_id url title",
-        },
-      })
-      .lean({ virtuals: true });
+  let sort = {};
 
-    return res.json({
-      status: 200,
-      data: {
-        collection,
-      },
-    });
-  } catch (error) {
-    next(error);
+  if (req.query.sort) {
+    sort[req.query.sort] = req.query.order === "desc" ? -1 : 1;
   }
-};
 
-const updateCollection = async (req, res, next) => {
-  try {
-    const _id = req.body._id ?? new mongoose.Types.ObjectId();
-    const collection = await CollectionModel.updateOne(
-      {
-        _id: _id,
-      },
-      req.body,
-      {
-        upsert: true,
-        new: true,
-      }
-    );
-    return res.json({
-      status: 200,
-      data: {
-        collection: {
-          id: _id,
-        },
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const getUserCollectionSlug = async (req, res, next) => {
-  try {
-    let collection = await CollectionModel.findOne({ slug: req.params.slug })
-      .populate({
-        path: "products",
-        match: { status: STATUS.ACTIVE },
-        populate: {
-          path: "assets",
-          select: "_id url title",
-        },
-      })
-      .lean({
-        virtuals: true,
-      });
-
-    return res.json({
-      status: 200,
-      data: {
-        collection,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const getUserCollection = async (req, res, next) => {
-  try {
-    let collection = await CollectionModel.findOne({ _id: req.params.id })
-      .populate({
-        path: "products",
-        populate: {
-          path: "assets",
-          select: "_id url title",
-        },
-        match: { status: STATUS.ACTIVE },
-      })
-      .lean({
-        virtuals: true,
-      });
-
-    return res.json({
-      status: 200,
-      data: {
-        collection,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const fetchUserCollection = async (req, res, next) => {
-  try {
-    const collections = await CollectionModel.find({
-      status: STATUS.ACTIVE,
+  const collections = await CollectionModel.find(filter)
+    .populate({
+      path: "asset",
+      select: "_id url title",
     })
-      .populate({
-        path: "asset",
-        select: "_id url title",
-      })
-      .lean({ virtuals: true });
+    .sort(sort)
+    .skip((page - 1) * limit)
+    .limit(limit)
+    .lean({ virtuals: true });
 
-    return res.json({
-      status: 200,
-      data: {
-        collections,
+  const total = await CollectionModel.find(filter).countDocuments();
+
+  return res.json({
+    status: 200,
+    data: {
+      collections,
+      total: total,
+      limit: limit,
+      page: page,
+    },
+  });
+};
+
+const getCollection = async (req, res) => {
+  const collectionId = req.params.id;
+  const collection = await CollectionModel.findById(collectionId)
+    .populate({
+      path: "products",
+      populate: {
+        path: "assets",
+        select: "_id url title",
       },
+    })
+    .lean({ virtuals: true });
+
+  return res.json({
+    status: 200,
+    data: {
+      collection,
+    },
+  });
+};
+
+const updateCollection = async (req, res) => {
+  const collectionId = req.body._id ?? new mongoose.Types.ObjectId();
+  const collection = await CollectionModel.updateOne(
+    {
+      _id: collectionId,
+    },
+    req.body,
+    {
+      upsert: true,
+      new: true,
+    }
+  );
+  return res.json({
+    status: 200,
+    data: {
+      collection: {
+        id: collectionId,
+      },
+    },
+  });
+};
+
+const getUserCollectionBySlug = async (req, res) => {
+  const slug = req.params.slug;
+  const collection = await CollectionModel.findOne({ slug: slug })
+    .populate({
+      path: "products",
+      match: { status: STATUS.ACTIVE },
+      populate: {
+        path: "assets",
+        select: "_id url title",
+      },
+      select:
+        "_id status url title slug price variants variantSchema assets price compareAtPrice",
+    })
+    .lean({
+      virtuals: true,
     });
-  } catch (error) {
-    next(error);
+
+  return res.json({
+    status: 200,
+    data: {
+      collection,
+    },
+  });
+};
+
+const getUserCollection = async (req, res) => {
+  const collectionId = req.params.id;
+  const collection = await CollectionModel.findById(collectionId)
+    .populate({
+      path: "products",
+      populate: {
+        path: "assets",
+        select: "_id url title",
+      },
+      match: { status: STATUS.ACTIVE },
+      select:
+        "_id status url title slug price variants variantSchema assets price compareAtPrice",
+    })
+    .lean({
+      virtuals: true,
+    });
+
+  return res.json({
+    status: 200,
+    data: {
+      collection,
+    },
+  });
+};
+
+const fetchUserCollection = async (req, res) => {
+  const filter = {};
+  const status = req.query.status;
+  const page = req.query.page ?? 1;
+  const limit = req.query.limit ?? 10;
+
+  filter["name"] = {
+    $regex: req.query.search ?? "",
+    $options: "i",
+  };
+
+  if (status) {
+    filter["status"] = status;
   }
+
+  let sort = {};
+
+  if (req.query.sort) {
+    sort[req.query.sort] = req.query.order === "desc" ? -1 : 1;
+  }
+
+  const collections = await CollectionModel.find(filter)
+    .populate({
+      path: "asset",
+      select: "_id url title",
+    })
+    .sort(sort)
+    .skip((page - 1) * limit)
+    .limit(limit)
+    .lean({ virtuals: true });
+
+  const total = await CollectionModel.find(filter).countDocuments();
+
+  return res.json({
+    status: 200,
+    data: {
+      collections,
+      total: total,
+      limit: limit,
+      page: page,
+    },
+  });
 };
 
 module.exports = {
@@ -157,6 +187,6 @@ module.exports = {
   getCollection,
   updateCollection,
   getUserCollection,
-  getUserCollectionSlug,
+  getUserCollectionBySlug,
   fetchUserCollection,
 };
