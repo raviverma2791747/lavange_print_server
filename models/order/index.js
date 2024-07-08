@@ -15,7 +15,6 @@ const orderSchema = new mongoose.Schema(
       {
         product: { type: mongoose.SchemaTypes.ObjectId, ref: "product" },
         variant: { type: mongoose.SchemaTypes.ObjectId, default: null },
-        variantSchema: { type: mongoose.SchemaTypes.ObjectId, default: null },
         price: { type: mongoose.SchemaTypes.Number },
         compareAtPrice: { type: mongoose.SchemaTypes.Number },
         quantity: {

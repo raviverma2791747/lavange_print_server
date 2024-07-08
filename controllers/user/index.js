@@ -17,500 +17,241 @@ const transporter = require("../../config/emailConfig");
 const jwt = require("jsonwebtoken");
 const hcaptcha = require("hcaptcha");
 
-const fetchUser = async (req, res, next) => {
-  try {
-    const page = parseInt(req.query.page) - 1 || 0;
-    const limit = parseInt(req.query.limit) || 10;
-    const search = req.query.search || "";
+const fetchUser = async (req, res) => {
+  const filter = {};
+  const status = req.query.status;
+  const page = req.query.page ?? 1;
+  const limit = req.query.limit ?? 10;
 
-    // if (search) {
-    //   filter["name"] = {
-    //     $regex: search,
-    //     $options: "i",
-    //   };
-    // }
+  filter["username"] = {
+    $regex: req.query.search ?? "",
+    $options: "i",
+  };
 
-    let users = await UserModel.find()
-      .skip(page * limit)
-      .limit(limit)
-      .lean();
-
-    //   Users.forEach((User) => {
-    //     User.assets = User.assets.map((asset) => {
-    //       return {
-    //         ...asset,
-    //         url: `${process.env.BASE_URI}:${process.env.PORT || 3000}/media/${asset.id}`,
-    //       };
-    //     });
-    //   });
-
-    const total = await UserModel.countDocuments({
-      title: {
-        $regex: search,
-        $options: "i",
-      },
-    });
-
-    return res.json({
-      status: 200,
-      data: {
-        users,
-        total: total,
-        page: page + 1,
-        limit: limit,
-      },
-    });
-  } catch (error) {
-    next(error);
+  if (status) {
+    filter["status"] = status;
   }
+
+  let sort = {};
+
+  if (req.query.sort) {
+    sort[req.query.sort] = req.query.order === "desc" ? -1 : 1;
+  }
+
+  const users = await UserModel.find()
+    .sort(sort)
+    .skip((page - 1) * limit)
+    .limit(limit)
+    .lean({ virtuals: true });
+
+  const total = await UserModel.find(filter).countDocuments();
+
+  return res.json({
+    status: 200,
+    data: {
+      users,
+      total: total,
+      limit: limit,
+      page: page,
+    },
+  });
 };
 
-const getUser = async (req, res, next) => {
-  try {
-    let user = await UserModel.findById({ _id: req.params.id })
-      // .populate({
-      //   path: "role",
-      //   select: "_id name",
-      // })
-      .lean();
-    
-    
-
-    // User.assets = User.assets.map((asset) => {
-    //   return {
-    //     ...asset,
-    //     url: `${process.env.BASE_URI}:${process.env.PORT || 3000}/media/${asset.id}`,
-    //   };
-    // });
-
-    return res.json({
-      status: 200,
-      data: {
-        user,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
+const getUser = async (req, res) => {
+  const userId = req.user.userId;
+  const user = await UserModel.findById(userId).lean({ virtuals: true });
+  return res.json({
+    status: 200,
+    data: {
+      user,
+    },
+  });
 };
 
-const updateUser = async (req, res, next) => {
-  try {
-    const _id = req.body._id ?? new mongoose.Types.ObjectId();
-
-    const User = await UserModel.updateOne(
-      {
-        _id,
+const updateUser = async (req, res) => {
+  const userId = req.body._id ?? new mongoose.Types.ObjectId();
+  const data = req.body;
+  const user = await UserModel.updateOne(
+    {
+      _id: userId,
+    },
+    data,
+    {
+      upsert: true,
+      new: true,
+    }
+  );
+  return res.json({
+    status: 200,
+    data: {
+      user: {
+        id: userId,
       },
-      req.body,
-      {
-        upsert: true,
-        new: true,
-      }
-    );
-    return res.json({
-      status: 200,
-      data: {
-        user: {
-          _id,
-        },
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
+    },
+  });
 };
 
 //Public
-const getUserPublic = async (req, res, next) => {
-  try {
-    const user = await UserModel.aggregate([
-      {
-        $match: {
-          _id: new mongoose.Types.ObjectId(req.params.id),
-        },
-      },
-      {
-        $project: {
-          password: 0,
-        },
-      },
-    ]);
-    // let User = await UserModel.findById({ _id: req.params.id })
-    //   .select("-password")
-    //   .lean();
-
-    // User.assets = User.assets.map((asset) => {
-    //   return {
-    //     ...asset,
-    //     url: `${process.env.BASE_URI}:${process.env.PORT || 3000}/media/${asset.id}`,
-    //   };
-    // });
-
-    // const variantConfig = User.variantConfigs.find((variantConfig) => {
-    //   return variantConfig.status === STATUS.ACTIVE;
-    // });
-
-    // if (variantConfig !== undefined) {
-    //   User.variants = variantConfig.variants;
-    //   User.variantOptions = variantConfig.variantSchema;
-    //   User.schemaId = variantConfig._id;
-    // }
-
-    // delete User.variantConfigs;
-
-    return res.json({
-      status: 200,
-      data: {
-        user: user[0],
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
+const getUserPublic = async (req, res) => {
+  const userId = req.params.id;
+  const user = await UserModel.findById(userId)
+    .select("-password")
+    .lean({ virtuals: true });
+  return res.json({
+    status: 200,
+    data: {
+      user,
+    },
+  });
 };
 
-const userExist = async (req, res, next) => {
-  const user = await UserModel.findOne({ username: req.body.username });
+const userExist = async (req, res) => {
+  const username = req.body.username;
+  const user = await UserModel.findOne({ username: username });
   if (user) {
     return res.json({ status: 200 });
   }
   return res.json({ status: 400 });
 };
 
-const userLogin = async (req, res, next) => {
-  try {
-    const { username, password, captcha_response } = req.body;
-    const user = await UserModel.findOne({
-      username,
-      status: USER_STATUS.ACTIVE,
-    }).populate("role");
+const userLogin = async (req, res) => {
+  const { username, password, captcha_response } = req.body;
+  const user = await UserModel.findOne({
+    username,
+    status: USER_STATUS.ACTIVE,
+  }).populate("role");
 
-    // if (!user.account) {
-    //   const newAccount = await AccountModel.create({
-    //     balance: 0, // Set an initial balance as needed
-    //   });
-    //   user.account = newAccount._id;
-    //   await user.save();
-    // }
+  if (!user) {
+    return res.json({ status: 400 });
+  }
 
-    // if (!user.role) {
-    //   const userRole = await RoleModel.findOne({ name: "user" });
-    //   user.role = userRole._id;
-    //   await user.save();
-    // }
+  if (!bcrypt.compareSync(password, user.password)) {
+    return res.json({ status: 400, messages: ["Invalid credentials"] });
+  }
 
-    if (!user) {
-      return res.json({ status: 400});
-    }
-
-    // const newActivity = new ActivityModel({
-    //   description: ActivityDescriptions.USER_LOGIN,
-    //   affected: {
-    //     users: [],
-    //   },
-    //   user: user.id,
-    //   activityType: ActivityTypes.USER,
-    // });
-
-    // await newActivity.save();
-
-    if (!bcrypt.compareSync(password, user.password)) {
-      return res.json({ status: 400, messages: ["Invalid credentials"] });
-    }
-
-    if (captcha_response) {
-      const captcha_verification = await hcaptcha.verify(
-        process.env.HCAPTCHA_SECRET_KEY,
-        captcha_response
-      );
-
-      if (!captcha_verification.success) {
-        return res.json({
-          status: 401,
-          messages: ["Captcha verification failed"],
-        });
-      }
-    }
-
-    // await user.populate({
-    //   path: "role",
-    //   select: ["_id", "name", "rights"], // Specify the fields you want to populate
-    // });
-
-    const { accessToken, refreshToken, accessTokenExp, refreshTokenExp } =
-      await generateTokens(user);
-
-    setTokenCookies(
-      res,
-      accessToken,
-      refreshToken,
-      accessTokenExp,
-      refreshTokenExp
+  if (captcha_response) {
+    const captcha_verification = await hcaptcha.verify(
+      process.env.HCAPTCHA_SECRET_KEY,
+      captcha_response
     );
 
-    res.json({
-      status: 200,
-      data: {
-        accessToken,
-        refreshToken,
-        access_token_exp: accessTokenExp,
-        refresh_token_exp: refreshTokenExp,
-      },
-    });
-  } catch (error) {
-    next(error);
+    if (!captcha_verification.success) {
+      return res.json({
+        status: 401,
+        messages: ["Captcha verification failed"],
+      });
+    }
   }
-};
 
-const userLoginAdmin = async (req, res, next) => {
-  try {
-    const { username, password } = req.body;
-    const user = await UserModel.findOne({
-      username,
-      status: USER_STATUS.ACTIVE,
-    }).populate("role");
+  const { accessToken, refreshToken, accessTokenExp, refreshTokenExp } =
+    await generateTokens(user);
 
-    // if (!user.account) {
-    //   const newAccount = await AccountModel.create({
-    //     balance: 0, // Set an initial balance as needed
-    //   });
-    //   user.account = newAccount._id;
-    //   await user.save();
-    // }
+  setTokenCookies(
+    res,
+    accessToken,
+    refreshToken,
+    accessTokenExp,
+    refreshTokenExp
+  );
 
-    // if (!user.role) {
-    //   const userRole = await RoleModel.findOne({ name: "user" });
-    //   user.role = userRole._id;
-    //   await user.save();
-    // }
-
-    if (!user) {
-      return res.json({ status: 400, messages: ["Invalid credentials!"] });
-    }
-
-    if (user.status !== USER_STATUS.ACTIVE) {
-      return res.json({ status: 400, messages: ["Invalid credentials!"] });
-    }
-
-    if (user.role.rights.includes(RightType.ADMIN_ACCESS) === false) {
-      return res.json({ status: 400, messages: ["Invalid credentials!"] });
-    }
-
-    // const newActivity = new ActivityModel({
-    //   description: ActivityDescriptions.USER_LOGIN,
-    //   affected: {
-    //     users: [],
-    //   },
-    //   user: user.id,
-    //   activityType: ActivityTypes.USER,
-    // });
-
-    // await newActivity.save();
-
-    if (!bcrypt.compareSync(password, user.password)) {
-      return res.json({ status: 400, messages: ["Invalid credentials!"] });
-    }
-
-    // await user.populate({
-    //   path: "role",
-    //   select: ["_id", "name", "rights"], // Specify the fields you want to populate
-    // });
-
-    const { accessToken, refreshToken, accessTokenExp, refreshTokenExp } =
-      await generateTokens(user);
-
-    setTokenCookies(
-      res,
+  res.json({
+    status: 200,
+    data: {
       accessToken,
       refreshToken,
-      accessTokenExp,
-      refreshTokenExp
+      access_token_exp: accessTokenExp,
+      refresh_token_exp: refreshTokenExp,
+    },
+  });
+};
+
+const userLoginAdmin = async (req, res) => {
+  const { username, password } = req.body;
+  const user = await UserModel.findOne({
+    username,
+    status: USER_STATUS.ACTIVE,
+  }).populate("role");
+
+  if (!user) {
+    return res.json({ status: 400, messages: ["Invalid credentials!"] });
+  }
+
+  if (user.status !== USER_STATUS.ACTIVE) {
+    return res.json({ status: 400, messages: ["Invalid credentials!"] });
+  }
+
+  if (user.role.rights.includes(RightType.ADMIN_ACCESS) === false) {
+    return res.json({ status: 400, messages: ["Invalid credentials!"] });
+  }
+
+  if (!bcrypt.compareSync(password, user.password)) {
+    return res.json({ status: 400, messages: ["Invalid credentials!"] });
+  }
+
+  const { accessToken, refreshToken, accessTokenExp, refreshTokenExp } =
+    await generateTokens(user);
+
+  setTokenCookies(
+    res,
+    accessToken,
+    refreshToken,
+    accessTokenExp,
+    refreshTokenExp
+  );
+
+  res.json({
+    status: 200,
+    messages: ["Login Successful!"],
+    data: {
+      accessToken,
+      refreshToken,
+      access_token_exp: accessTokenExp,
+      refresh_token_exp: refreshTokenExp,
+    },
+  });
+};
+
+const userRegister = async (req, res) => {
+  const { username, password, firstName, lastName, email, captcha_response } =
+    req.body;
+
+  if (captcha_response) {
+    const captcha_verification = await hcaptcha.verify(
+      process.env.HCAPTCHA_SECRET_KEY,
+      captcha_response
     );
 
-    res.json({
-      status: 200,
-      messages: ["Login Successful!"],
-      data: {
-        accessToken,
-        refreshToken,
-        access_token_exp: accessTokenExp,
-        refresh_token_exp: refreshTokenExp,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const userRegister = async (req, res, next) => {
-  try {
-    const { username, password, firstName, lastName, email, captcha_response } =
-      req.body;
-
-    if (captcha_response) {
-      const captcha_verification = await hcaptcha.verify(
-        process.env.HCAPTCHA_SECRET_KEY,
-        captcha_response
-      );
-
-      if (!captcha_verification.success) {
-        return res.json({
-          status: 401,
-          messages: ["Captcha verification failed"],
-        });
-      }
+    if (!captcha_verification.success) {
+      return res.json({
+        status: 401,
+        messages: ["Captcha verification failed"],
+      });
     }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const userRole = await RoleModel.findOne({ name: "user" });
-
-    const user = new UserModel({
-      username,
-      firstName,
-      lastName,
-      email,
-      password: hashedPassword,
-      role: userRole._id,
-      status: USER_STATUS.ACTIVE,
-    });
-    await user.save();
-    res.json({ status: 200, data: { msg: "User registered successfully" } });
-  } catch (error) {
-    next(error);
   }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const userRole = await RoleModel.findOne({ name: "user" });
+
+  const user = new UserModel({
+    username,
+    firstName,
+    lastName,
+    email,
+    password: hashedPassword,
+    role: userRole._id,
+    status: USER_STATUS.ACTIVE,
+  });
+  await user.save();
+  res.json({ status: 200, data: { msg: "User registered successfully" } });
 };
-
-//legacy
-// const userLoginGoogle = async (req, res, next) => {
-//   try {
-//     const { token } = req.body;
-
-//     if (!token) {
-//       return res.json({ status: 400 });
-//     }
-
-//     const oAuth2Client = new OAuth2Client(
-//       process.env.GOOGLE_CLIENT_ID,
-//       process.env.GOOGLE_CLIENT_SECRET
-//     );
-
-//     let token_info;
-
-//     try {
-//       token_info = await oAuth2Client.verifyIdToken({ idToken: token });
-//     } catch (error) {
-//       return res.json({ status: 400 });
-//     }
-
-//     let user = await UserModel.findOne({
-//       $or: [
-//         { username: token_info.payload.email },
-//         { email: token_info.payload.email },
-//       ],
-//     });
-
-//     if (!user) {
-//       const userRole = await RoleModel.findOne({ name: "user" });
-//       user = new UserModel({
-//         username: token_info.payload.email,
-//         firstName: token_info.payload.given_name,
-//         lastName: token_info.payload.family_name,
-//         email: token_info.payload.email,
-//         role: userRole._id,
-//       });
-
-//       await user.save();
-//     }
-
-//     const { id: userId, username: _username, firstName, lastName } = user;
-
-//     // await newActivity.save();
-
-//     const jwt_token = jwt.sign(
-//       { userId, username: _username, firstName, lastName },
-//       process.env.JWT_SECRET_KEY,
-//       {
-//         expiresIn: "8h",
-//       }
-//     );
-
-//     return res.json({
-//       status: 200,
-//       data: {
-//         token: jwt_token,
-//       },
-//     });
-//   } catch (error) {
-//     next(error);
-//   }
-// };
-
-const userInfo = async (req, res, next) => {
-  try {
-    // let user = await UserModel.findById(req.user.userId)
-    //   .select("-password")
-    //   .lean();
-
-    // user.addresses = user.addresses.filter(
-    //   (address) => address.status !== "archive"
-    // );
-
-    const user = await UserModel.aggregate([
-      {
-        $match: {
-          _id: new mongoose.Types.ObjectId(req.user.userId),
-        },
-      },
-      {
-        $set: {
-          addresses: {
-            $filter: {
-              input: "$addresses",
-              as: "address",
-              cond: {
-                $eq: ["$$address.status", STATUS.ACTIVE],
-              },
-            },
-          },
-        },
-      },
-      {
-        $lookup: {
-          from: "roles",
-          localField: "role",
-          foreignField: "_id",
-          as: "role",
-        },
-      },
-      {
-        $set: {
-          role: {
-            $first: "$role",
-          },
-        },
-      },
-      // {
-      //   $lookup: {
-      //     from: "product",
-      //     localField: "product",
-      //     foreignField: "_id",
-      //     as: "product",
-      //   },
-      // },
-      {
-        $project: {
-          password: 0,
-          // role: {
-          //   rights: 0,
-          // }
-        },
-      },
-    ]);
-    return res.json({ status: 200, data: { user: user[0] } });
-  } catch (error) {
-    next(error);
-  }
+const userInfo = async (req, res) => {
+  const userId = req.user.userId;
+  const user = await UserModel.findById(userId)
+    .select("-password")
+    .populate("role")
+    .populate("addresses")
+    .lean({ virtuals: true });
+  return res.json({ status: 200, data: { user } });
 };
 
 const userUpdatePassword = async (req, res) => {
@@ -720,14 +461,12 @@ module.exports = {
   loginUserPublic: userLogin,
   userExistPublic: userExist,
   registerUserPublic: userRegister,
-  //loginUserGooglePublic: userLoginGoogle,
   userLoginGoogle,
   userLoginFacebook,
   userInfo,
   updatePassword: userUpdatePassword,
   userLoginAdmin,
   userVerifyEmail,
-  // getAccessToken,
   userLogout,
   userSendPasswordResetEmail,
   userPasswordReset,

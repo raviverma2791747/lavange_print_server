@@ -1,8 +1,7 @@
 const OrderModel = require("../../models/order");
 const UserModel = require("../../models/user");
-const { STATUS } = require("../../helper/constants");
 
-const getStats = async (req, res, next) => {
+const getStats = async (req, res) => {
   const users = await UserModel.aggregate([
     {
       $match: {

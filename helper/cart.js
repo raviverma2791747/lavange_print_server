@@ -1,46 +1,39 @@
-const ProductModel = require("../models/product");
+const { STATUS } = require("./constants");
 
-const getCartPopulated = async (cart) => {
-  const cart_p = await Promise.all(
-    cart.map(async (ci) => {
-      let price = 0;
-      let compareAtPrice = 0;
-        const product = await ProductModel.findById(ci.product);
-      let variant;
-      if (ci.variant) {
-        const variantConfig = product.variantConfigs.id(ci.variantSchema);
-        variant = variantConfig.variants.id(ci.variant);
-      } else {
-        price = product.price;
-        compareAtPrice = product.compareAtPrice;
-      }
+const processCart = (cart) => {
+  const processed_cart = cart.map((cartItem) => {
+    let isOutOfStock = false;
+    let price = 0;
+    let compareAtPrice = 0;
+    let variant;
+    if (cartItem.variant) {
+      variant = cartItem.product.variants.id(cartItem.variant);
+    } else {
+      price = cartItem.product.price;
+      compareAtPrice = cartItem.product.compareAtPrice;
+    }
 
-      if (variant) {
-        price = variant.price;
-        compareAtPrice = variant.compareAtPrice;
-      }
+    if (variant) {
+      price = variant.price;
+      compareAtPrice = variant.compareAtPrice;
+    } else {
+      isOutOfStock = true;
+    }
 
-      // console.log({
-      //   product: ci.product,
-      //   quantity: ci.quantity,
-      //   variant: ci.variant,
-      //   variantSchema: ci.variantSchema,
-      //   price: price,
-      // });
+    if (cartItem.product.status !== STATUS.ACTIVE) {
+      isOutOfStock = true;
+    }
 
-      return {
-        product: ci.product,
-        quantity: ci.quantity,
-        variant: ci.variant,
-        variantSchema: ci.variantSchema,
-        price: price,
-        compareAtPrice: compareAtPrice,
-        _id: ci._id,
-      };
-    })
-  );
+    return {
+      product: cartItem.product,
+      variant: cartItem.variant,
+      quantity: cartItem.quantity,
+      price: price,
+      compareAtPrice: compareAtPrice,
+      isOutOfStock: isOutOfStock,
+    };
+  });
+  return processed_cart;
+};
 
-  return cart_p;
-}
-
-module.exports = { getCartPopulated };
+module.exports = { processCart };
