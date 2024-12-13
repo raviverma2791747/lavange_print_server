@@ -1,6 +1,8 @@
 const { S3Client } = require("@aws-sdk/client-s3");
 const multer = require("multer");
 const multerS3 = require("multer-s3");
+const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const mongoose = require("mongoose");
 const path = require("path");
 const dotenv = require("dotenv");
@@ -10,10 +12,9 @@ dotenv.config();
 var storage;
 var s3;
 
-if (
-  process.env.NODE_ENV === "production" &&
-  process.env.MEDIA_LOCAL === "false"
+if (process.env.MEDIA_LOCAL === "false" && process.env.MEDIA_CDN === "aws"
 ) {
+  console.log("Storage: S3");
   s3 = new S3Client({
     region: process.env.AWS_REGION,
     credentials: {
@@ -38,7 +39,33 @@ if (
       );
     },
   });
+} else if (
+  process.env.MEDIA_LOCAL === "false" &&
+  process.env.MEDIA_CDN === "cloudinary"
+) {
+  console.log("Storage: Cloudinary");
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
+
+  storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: (req, file) => {
+      const folderPath = `${process.env.CLOUDINARY_FOLDER_NAME}`; // Update the folder path here
+      const fileExtension = path.extname(file.originalname).substring(1);
+      const publicId =  `image-${new mongoose.Types.ObjectId().toString()}`;
+
+      return {
+        folder: folderPath,
+        public_id: publicId,
+        format: fileExtension,
+      };
+    },
+  });
 } else {
+  console.log("Storage: Local");
   storage = multer.diskStorage({
     destination: (req, file, cb) => {
       cb(null, `${process.env.MEDIA_PATH}/`); // Specify the upload directory

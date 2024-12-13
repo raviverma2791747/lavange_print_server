@@ -1,7 +1,8 @@
 const { assetUrl } = require("../../helper/utils");
 const fs = require("fs");
 const ImageModel = require("../../models/image");
-const { s3 } = require("../../config/multerConfig");
+const { s3, storage } = require("../../config/multerConfig");
+const cloudinary = require("cloudinary").v2;
 
 const createImage = async (req, res) => {
   if (!req.file) {
@@ -13,15 +14,24 @@ const createImage = async (req, res) => {
   let filename;
   let url;
   if (
-    process.env.NODE_ENV === "production" &&
-    process.env.MEDIA_LOCAL === "false"
+    process.env.MEDIA_LOCAL === "false" &&
+    process.env.MEDIA_CDN === "aws"
   ) {
     filename = req.file.key;
     url = req.file.location;
+  } else if (
+    process.env.MEDIA_LOCAL === "false" &&
+    process.env.MEDIA_CDN === "cloudinary"
+  ) {
+    console.log(req.file);
+    filename = req.file.filename.split("/").at(-1);
+    url = assetUrl(filename);
   } else {
     filename = req.file.filename;
     url = assetUrl(req.file.filename);
   }
+
+  console.log(filename, url);
 
   const imageId = filename;
   const title = req.body.title || "";
@@ -78,13 +88,21 @@ const getImage = async (req, res) => {
 };
 
 const deleteImage = async (req, res) => {
-  if (process.env.NODE_ENV === "production") {
+  if (
+    process.env.MEDIA_LOCAL === "false" &&
+    process.env.MEDIA_CDN === "aws"
+  ) {
     const params = {
       Bucket: process.env.AWS_S3_BUCKET,
       Key: req.params.id,
     };
 
     const response = await s3.deleteObject(params).promise();
+  } else if (
+    process.env.MEDIA_LOCAL === "false" &&
+    process.env.MEDIA_CDN === "cloudinary"
+  ) {
+    const result = await cloudinary.uploader.destroy(req.params.id);
   } else {
     fs.unlinkSync(`./media/${req.params.id}`);
   }
